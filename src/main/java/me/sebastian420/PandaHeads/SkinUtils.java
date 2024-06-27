@@ -89,6 +89,25 @@ public class SkinUtils {
     }
 
     /**
+     * Sets skin by UUID.
+     *
+     * @param uuid uuid of the player who has the skin wanted
+     * @return property containing skin value and signature if successful, otherwise null.
+     */
+    @Nullable
+    public static String[] fetchSkinByUUID(UUID uuid) {
+        try {
+            String reply = urlRequest(URI.create("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid.toString() + "?unsigned=false").toURL(), true, null);
+            return getSkinFromReply(reply);
+        } catch (IOException e) {
+            System.out.println("ERROR BIG ERROR");
+            System.out.println(e);
+        }
+        return null;
+    }
+
+
+    /**
      * Sets skin from reply that was got from API.
      * Used internally only.
      *
@@ -103,10 +122,12 @@ public class SkinUtils {
 
         String value = reply.split("\"value\":\"")[1].split("\"")[0];
         String signature = reply.split("\"signature\":\"")[1].split("\"")[0];
+        String name = reply.split("\"name\":\"")[1].split("\"")[0];
 
-        String[] returnValue = new String[2];
+        String[] returnValue = new String[3];
         returnValue[0] = value;
         returnValue[1] = signature;
+        returnValue[2] = name;
 
         return returnValue;
 

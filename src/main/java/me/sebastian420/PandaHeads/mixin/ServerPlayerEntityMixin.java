@@ -66,18 +66,15 @@ public abstract class ServerPlayerEntityMixin {
 		tag.putInt("count", 1);
 
 		@Nullable String[] skinValues = SkinUtils.fetchSkinByName("JayDay420");
+
+		System.out.println("GOT NAME:");
+		System.out.println(skinValues[2]);
+
 		ProfileComponent profileComponent = new ProfileComponent(serverPlayerEntity.getGameProfile());
-		System.out.println("Before");
-		System.out.println(profileComponent.properties().toString());
 		profileComponent.properties().clear();
 		profileComponent.properties().put("textures",new Property("textures",skinValues[0],skinValues[1]));
-		System.out.println("After");
-		System.out.println(profileComponent.properties().toString());
-		//new GameProfile(UUID.randomUUID(),"Jenkem").getProperties().put("name",5);
-
 		ItemStack player_skull = ItemStack.fromNbtOrEmpty(this.getServerWorld().getRegistryManager(), tag);
 		player_skull.set(DataComponentTypes.ITEM_NAME,Text.of("Some Fuckboys Head"));
-		//player_skull.set(DataComponentTypes.CUSTOM_NAME,Text.of("FUCK2"));
 		Style kek = Style.EMPTY.withColor(Formatting.RED).withBold(true);
 		player_skull.set(DataComponentTypes.LORE, LoreComponent.DEFAULT.with(Text.of("YO SOME LORE BOi").getWithStyle(kek).getFirst()));
 		player_skull.set(DataComponentTypes.PROFILE, profileComponent);
