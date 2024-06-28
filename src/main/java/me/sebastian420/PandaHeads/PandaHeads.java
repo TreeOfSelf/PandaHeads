@@ -2,15 +2,17 @@ package me.sebastian420.PandaHeads;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import me.sebastian420.PandaHeads.json.jsonReader;
+import me.sebastian420.PandaHeads.json.JsonReader;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentMap;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
@@ -19,6 +21,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -36,13 +39,15 @@ public class PandaHeads implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("panda-heads");
 	private static final Style UNKNOWN_STYLE = Style.EMPTY.withColor(Formatting.GRAY).withBold(true);
 	private static final Style UNKNOWN_STYLE_LORE  = Style.EMPTY.withColor(Formatting.GRAY).withItalic(true);
+
+
 	@Override
 	public void onInitialize() {
 		LOGGER.info("PandaHeads loaded");
 		// Hook into block break event
+		ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
 
 
-		jsonReader.run();
 
 		PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
 
@@ -67,6 +72,10 @@ public class PandaHeads implements ModInitializer {
 			}
 			return ActionResult.PASS;
 		});
+	}
+
+	private void onServerStarted(MinecraftServer minecraftServer) {
+		JsonReader.run(minecraftServer);
 	}
 
 	private static void onHeadPlace(World world, PlayerEntity player, BlockPos pos, ItemStack itemStack) {
@@ -147,12 +156,12 @@ public class PandaHeads implements ModInitializer {
 		ProfileComponent profileComponent = componentMap.get(DataComponentTypes.PROFILE);
 		boolean brokenHead = false;
 
+
 		if (profileComponent.name().get().isEmpty() || profileComponent.name().get().isBlank()) {
 
 			String name = getNameFromComponentMap(componentMap);
 			if(name == null){
 				headStack.set(DataComponentTypes.ITEM_NAME, Text.of("Unknown Head").getWithStyle(UNKNOWN_STYLE).getFirst());
-				headStack.set(DataComponentTypes.LORE, LoreComponent.DEFAULT.with(Text.of("This head is of an unknown origin").getWithStyle(UNKNOWN_STYLE_LORE).getFirst()));
 				name = "Unknown";
 				brokenHead = true;
 			}
@@ -161,6 +170,10 @@ public class PandaHeads implements ModInitializer {
 			Property property = profileComponent.properties().get("textures").iterator().next();
 			newProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
 			profileComponent = newProfile;
+		}
+
+		if(componentMap.get(DataComponentTypes.LORE) == null){
+			headStack.set(DataComponentTypes.LORE, LoreComponent.DEFAULT.with(Text.of("This head's origin has been lost to time").getWithStyle(UNKNOWN_STYLE_LORE).getFirst()));
 		}
 
 
