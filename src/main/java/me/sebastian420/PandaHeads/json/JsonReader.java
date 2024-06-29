@@ -79,7 +79,7 @@ public class JsonReader {
 
                     ComponentMap.Builder newBlockEntityComponents = ComponentMap.builder();
                     UUID uuid = UUID.fromString(owningPlayerUUID);
-                    String[] skinValues = SkinUtils.fetchSkinByUUID(uuid);
+                    @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(uuid);
 
                     if (skinValues != null) {
                         String name = skinValues[2];

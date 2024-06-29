@@ -16,19 +16,30 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentMap;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.ProfileComponent;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.stat.Stats;
+import net.minecraft.text.*;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.apache.logging.log4j.core.layout.TextEncoderHelper;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,11 +61,11 @@ public class PandaHeads implements ModInitializer {
 
 
 		PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
-
-			if (state.getBlock() != Blocks.PLAYER_HEAD && state.getBlock() != Blocks.PLAYER_WALL_HEAD) return true;
+			return true;
+			/*if (state.getBlock() != Blocks.PLAYER_HEAD && state.getBlock() != Blocks.PLAYER_WALL_HEAD) return true;
             assert blockEntity != null;
             onHeadBreak(world, player, pos, state, blockEntity);
-			return false;
+			return false;*/
 
         });
 
@@ -78,6 +89,8 @@ public class PandaHeads implements ModInitializer {
 		JsonReader.run(minecraftServer);
 	}
 
+
+
 	private static void onHeadPlace(World world, PlayerEntity player, BlockPos pos, ItemStack itemStack) {
 		// Perform your custom logic after the block is placed
 		BlockState placedBlockState = world.getBlockState(pos);
@@ -95,19 +108,41 @@ public class PandaHeads implements ModInitializer {
 			newBlockEntityComponents.add(DataComponentTypes.PROFILE, itemStack.get(DataComponentTypes.PROFILE));
 		}
 		newBlockEntityComponents.add(DataComponentTypes.LORE, itemStack.get(DataComponentTypes.LORE));
-		newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, itemStack.get(DataComponentTypes.ITEM_NAME));
-		newBlockEntityComponents.add(DataComponentTypes.CUSTOM_NAME, itemStack.get(DataComponentTypes.CUSTOM_NAME));
+
+		if ( componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
+				((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
+				componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner") )  ) {
+
+			@Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(uuid);
+
+			if (skinValues != null) {
+				newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, Text.of("§f§l" + skinValues[2] + "'s §f§lHead"));
+			} else {
+				newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, itemStack.get(DataComponentTypes.CUSTOM_NAME));
+			}
+
+		} else {
+			newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, itemStack.get(DataComponentTypes.ITEM_NAME));
+
+		}
 
 		placedBlockEntity.setComponents(newBlockEntityComponents.build());
+
+
 
 	}
 
 	private static UUID getUUIDFromComponentMap(ComponentMap componentMap){
 		UUID uuid;
-		if (componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
-				componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
-				componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) {
-					uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").getString("head-drop:headdrop-user"));
+		if ( componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
+				((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
+						componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner") )  ) {
+			if (componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) {
+				uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").getString("head-drop:headdrop-user"));
+			} else {
+				uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getString("HeadDrops_Owner"));
+			}
+
 		}else{
 			uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
 		}
@@ -116,18 +151,28 @@ public class PandaHeads implements ModInitializer {
 
 	private static String getNameFromComponentMap(ComponentMap componentMap){
 		UUID uuid;
-		if(componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
-				componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().contains("PublicBukkitValues") &&
-				componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) {
-			uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").getString("head-drop:headdrop-user"));
-			return(SkinUtils.fetchSkinByUUID(uuid)[2]);
+		if ( componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
+				((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
+						componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner") )  ) {
+			if (componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) {
+				uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").getString("head-drop:headdrop-user"));
+			} else {
+				uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getString("HeadDrops_Owner"));
+			}
+
+			@Nullable String[] skinVals = SkinUtils.fetchSkinByUUID(uuid);
+			if(skinVals != null){
+				return(skinVals[2]);
+			} else {
+				return null;
+			}
 		}else{
 			uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
 			String name = componentMap.get(DataComponentTypes.PROFILE).name().get();
 			if (name.isEmpty() || name.isBlank()){
 				@Nullable String[] skinVals = SkinUtils.fetchSkinByUUID(uuid);
 				if(skinVals != null){
-					return(SkinUtils.fetchSkinByUUID(uuid)[2]);
+					return(skinVals[2]);
 				} else {
 					return null;
 				}
@@ -136,6 +181,9 @@ public class PandaHeads implements ModInitializer {
 			}
 		}
 	}
+
+
+
 
 	private void onHeadBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity blockEntity) {
 
@@ -156,7 +204,7 @@ public class PandaHeads implements ModInitializer {
 		ProfileComponent profileComponent = componentMap.get(DataComponentTypes.PROFILE);
 		boolean brokenHead = false;
 
-
+		//Try and fix broken names
 		if (profileComponent.name().get().isEmpty() || profileComponent.name().get().isBlank()) {
 
 			String name = getNameFromComponentMap(componentMap);
@@ -172,18 +220,44 @@ public class PandaHeads implements ModInitializer {
 			profileComponent = newProfile;
 		}
 
-		if(componentMap.get(DataComponentTypes.LORE) == null){
+		//If missing lore
+		if (!componentMap.contains(DataComponentTypes.LORE) || (componentMap.get(DataComponentTypes.LORE).lines().isEmpty())){
 			headStack.set(DataComponentTypes.LORE, LoreComponent.DEFAULT.with(Text.of("This head's origin has been lost to time").getWithStyle(UNKNOWN_STYLE_LORE).getFirst()));
 		}
 
 
-		headStack.set(DataComponentTypes.PROFILE, profileComponent);
-
 		if (!brokenHead) {
 			headStack.set(DataComponentTypes.ITEM_NAME, componentMap.get(DataComponentTypes.ITEM_NAME));
-			headStack.set(DataComponentTypes.CUSTOM_NAME, componentMap.get(DataComponentTypes.CUSTOM_NAME));
+			//headStack.set(DataComponentTypes.CUSTOM_NAME, componentMap.get(DataComponentTypes.CUSTOM_NAME));
 			headStack.set(DataComponentTypes.LORE, componentMap.get(DataComponentTypes.LORE));
+
+			//Update skin and name
+			if(profileComponent.id().isPresent() && componentMap.contains(DataComponentTypes.ITEM_NAME)) {
+				int silkTouchLevel = player.getStackInHand(player.getActiveHand()).getEnchantments().getLevel(world.getRegistryManager().get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.SILK_TOUCH).get());
+				if (silkTouchLevel < 1) {
+					@Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.id().get());
+					if (skinValues != null) {
+						System.out.println("Setting new Skin values yoo");
+
+						ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, skinValues[2]));
+						newProfile.properties().clear();
+						newProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
+						profileComponent = newProfile;
+
+						String nameString = Text.Serialization.toJsonString(componentMap.get(DataComponentTypes.ITEM_NAME), DynamicRegistryManager.EMPTY);
+						System.out.println(nameString);
+						int index = nameString.indexOf('§');
+						char nameColor = nameString.charAt(index + 1);
+						Text nameText = Text.of("§" + nameColor + "§l" + skinValues[2] + "'s §f§lHead");
+						headStack.set(DataComponentTypes.ITEM_NAME, nameText);
+
+					}
+				}
+			}
+
 		}
+
+		headStack.set(DataComponentTypes.PROFILE, profileComponent);
 
 		ItemEntity playerHeadDrop = new ItemEntity(
 				world,

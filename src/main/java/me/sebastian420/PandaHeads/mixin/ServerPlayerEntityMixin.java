@@ -1,5 +1,6 @@
 package me.sebastian420.PandaHeads.mixin;
 
+import com.google.gson.JsonObject;
 import com.mojang.authlib.properties.Property;
 import me.sebastian420.PandaHeads.SkinUtils;
 import net.minecraft.component.DataComponentTypes;
@@ -16,7 +17,9 @@ import net.minecraft.stat.StatType;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.profiling.jfr.sample.FileIoSample;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -46,6 +49,8 @@ public abstract class ServerPlayerEntityMixin {
 	private static final Style DEATH_TIME = Style.EMPTY.withColor(Formatting.WHITE).withItalic(false);
 	private static final Style DEATH_REASON_STYLE = Style.EMPTY.withColor(Formatting.RED).withItalic(true).withItalic(false);
 	private static final Style DATE_STYLE = Style.EMPTY.withColor(Formatting.YELLOW).withBold(true).withItalic(false);
+
+
 
 	@Unique
 	private static String formatSeconds(int totalSeconds) {
@@ -78,7 +83,7 @@ public abstract class ServerPlayerEntityMixin {
 	}
 
 	@Inject(at = @At("HEAD"), method = "onDeath")
-	private void init(DamageSource damageSource, CallbackInfo ci) {
+	private void ourOnDeath(DamageSource damageSource, CallbackInfo ci) {
 		ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)(Object)this;
 
 		NbtCompound tag = new NbtCompound();
@@ -121,9 +126,10 @@ public abstract class ServerPlayerEntityMixin {
 			nameColor = "4";
 		}
 
-		List<Text> loreList = new ArrayList<>();
 
-		loreList.add((Text.of(damageSource.getDeathMessage(serverPlayerEntity).getString())).getWithStyle(DEATH_REASON_STYLE).getFirst());
+
+		List<Text> loreList = new ArrayList<>();
+		loreList.add((damageSource.getDeathMessage(serverPlayerEntity).copy().setStyle(DEATH_REASON_STYLE)));
 		loreList.add(Text.of("Alive for: "+formatSeconds(lastDeathTime)).getWithStyle(DEATH_TIME).getFirst());
 		loreList.add(Text.of(formattedDate).getWithStyle(DATE_STYLE).getFirst());
 
