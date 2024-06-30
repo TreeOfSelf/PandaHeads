@@ -1,6 +1,8 @@
 package me.sebastian420.PandaHeads;
 
 import com.google.gson.JsonParser;
+import net.minecraft.component.ComponentMap;
+import net.minecraft.component.DataComponentTypes;
 import org.jetbrains.annotations.Nullable;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -104,6 +106,58 @@ public class SkinUtils {
             System.out.println(e);
         }
         return null;
+    }
+
+    @Nullable
+    public static UUID getUUIDFromComponentMap(ComponentMap componentMap){
+        UUID uuid;
+        if ( componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
+                ((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
+                        componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner") )  ) {
+            if (componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) {
+                uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").getString("head-drop:headdrop-user"));
+            } else {
+                uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getString("HeadDrops_Owner"));
+            }
+
+        }else{
+            uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
+        }
+        return(uuid);
+    }
+
+    @Nullable
+    public static String getNameFromComponentMap(ComponentMap componentMap){
+        UUID uuid;
+        if ( componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
+                ((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
+                        componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner") )  ) {
+            if (componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) {
+                uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").getString("head-drop:headdrop-user"));
+            } else {
+                uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getString("HeadDrops_Owner"));
+            }
+
+            @Nullable String[] skinVals = SkinUtils.fetchSkinByUUID(uuid);
+            if(skinVals != null){
+                return(skinVals[2]);
+            } else {
+                return null;
+            }
+        }else{
+            uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
+            String name = componentMap.get(DataComponentTypes.PROFILE).name().get();
+            if (name.isEmpty() || name.isBlank()){
+                @Nullable String[] skinVals = SkinUtils.fetchSkinByUUID(uuid);
+                if(skinVals != null){
+                    return(skinVals[2]);
+                } else {
+                    return null;
+                }
+            } else {
+                return name;
+            }
+        }
     }
 
 

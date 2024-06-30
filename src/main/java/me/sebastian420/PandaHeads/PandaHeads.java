@@ -1,45 +1,26 @@
 package me.sebastian420.PandaHeads;
 
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
 import me.sebastian420.PandaHeads.json.JsonReader;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentMap;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.LoreComponent;
-import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.ProfileComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.stat.Stats;
 import net.minecraft.text.*;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.apache.logging.log4j.core.layout.TextEncoderHelper;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +29,6 @@ import java.util.UUID;
 
 public class PandaHeads implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("panda-heads");
-	private static final Style UNKNOWN_STYLE = Style.EMPTY.withColor(Formatting.GRAY).withBold(true);
-	private static final Style UNKNOWN_STYLE_LORE  = Style.EMPTY.withColor(Formatting.GRAY).withItalic(true);
 
 
 	@Override
@@ -57,18 +36,6 @@ public class PandaHeads implements ModInitializer {
 		LOGGER.info("PandaHeads loaded");
 		// Hook into block break event
 		ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStarted);
-
-
-
-		PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
-			return true;
-			/*if (state.getBlock() != Blocks.PLAYER_HEAD && state.getBlock() != Blocks.PLAYER_WALL_HEAD) return true;
-            assert blockEntity != null;
-            onHeadBreak(world, player, pos, state, blockEntity);
-			return false;*/
-
-        });
-
 
 		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
 			//if we are placing
@@ -99,8 +66,8 @@ public class PandaHeads implements ModInitializer {
 		if (placedBlockEntity == null || placedBlockEntity.getType() != BlockEntityType.SKULL) return;
 
 		ComponentMap componentMap = itemStack.getComponents();
-		UUID uuid = getUUIDFromComponentMap(componentMap);
-		String name = getNameFromComponentMap(componentMap);
+		UUID uuid = SkinUtils.getUUIDFromComponentMap(componentMap);
+		String name = SkinUtils.getNameFromComponentMap(componentMap);
 		ComponentMap.Builder newBlockEntityComponents = ComponentMap.builder();
 		if (name != null) {
 			newBlockEntityComponents.add(DataComponentTypes.PROFILE, new ProfileComponent(new GameProfile(uuid, name)));
@@ -129,150 +96,7 @@ public class PandaHeads implements ModInitializer {
 		placedBlockEntity.setComponents(newBlockEntityComponents.build());
 
 
-
 	}
 
-	private static UUID getUUIDFromComponentMap(ComponentMap componentMap){
-		UUID uuid;
-		if ( componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
-				((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
-						componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner") )  ) {
-			if (componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) {
-				uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").getString("head-drop:headdrop-user"));
-			} else {
-				uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getString("HeadDrops_Owner"));
-			}
-
-		}else{
-			uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
-		}
-		return(uuid);
-	}
-
-	private static String getNameFromComponentMap(ComponentMap componentMap){
-		UUID uuid;
-		if ( componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
-				((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
-						componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner") )  ) {
-			if (componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) {
-				uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").getString("head-drop:headdrop-user"));
-			} else {
-				uuid =  UUID.fromString(componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getString("HeadDrops_Owner"));
-			}
-
-			@Nullable String[] skinVals = SkinUtils.fetchSkinByUUID(uuid);
-			if(skinVals != null){
-				return(skinVals[2]);
-			} else {
-				return null;
-			}
-		}else{
-			uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
-			String name = componentMap.get(DataComponentTypes.PROFILE).name().get();
-			if (name.isEmpty() || name.isBlank()){
-				@Nullable String[] skinVals = SkinUtils.fetchSkinByUUID(uuid);
-				if(skinVals != null){
-					return(skinVals[2]);
-				} else {
-					return null;
-				}
-			} else {
-				return name;
-			}
-		}
-	}
-
-
-
-
-	private void onHeadBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity blockEntity) {
-
-
-
-		ComponentMap componentMap = blockEntity.getComponents();
-		if (componentMap == null || !componentMap.contains(DataComponentTypes.PROFILE)) {
-			componentMap = blockEntity.createComponentMap();
-		} else {
-			Property property = blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).properties().get("textures").iterator().next();
-			componentMap.get(DataComponentTypes.PROFILE).properties().clear();
-			componentMap.get(DataComponentTypes.PROFILE).properties().put("textures", new Property(property.name(), property.value(), property.signature()));
-		}
-
-
-		ItemStack headStack = Items.PLAYER_HEAD.getDefaultStack();
-		UUID uuid = getUUIDFromComponentMap(componentMap);
-		ProfileComponent profileComponent = componentMap.get(DataComponentTypes.PROFILE);
-		boolean brokenHead = false;
-
-		//Try and fix broken names
-		if (profileComponent.name().get().isEmpty() || profileComponent.name().get().isBlank()) {
-
-			String name = getNameFromComponentMap(componentMap);
-			if(name == null){
-				headStack.set(DataComponentTypes.ITEM_NAME, Text.of("Unknown Head").getWithStyle(UNKNOWN_STYLE).getFirst());
-				name = "Unknown";
-				brokenHead = true;
-			}
-			ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, name));
-			newProfile.properties().clear();
-			Property property = profileComponent.properties().get("textures").iterator().next();
-			newProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
-			profileComponent = newProfile;
-		}
-
-		//If missing lore
-		if (!componentMap.contains(DataComponentTypes.LORE) || (componentMap.get(DataComponentTypes.LORE).lines().isEmpty())){
-			headStack.set(DataComponentTypes.LORE, LoreComponent.DEFAULT.with(Text.of("This head's origin has been lost to time").getWithStyle(UNKNOWN_STYLE_LORE).getFirst()));
-		}
-
-
-		if (!brokenHead) {
-			headStack.set(DataComponentTypes.ITEM_NAME, componentMap.get(DataComponentTypes.ITEM_NAME));
-			//headStack.set(DataComponentTypes.CUSTOM_NAME, componentMap.get(DataComponentTypes.CUSTOM_NAME));
-			headStack.set(DataComponentTypes.LORE, componentMap.get(DataComponentTypes.LORE));
-
-			//Update skin and name
-			if(profileComponent.id().isPresent() && componentMap.contains(DataComponentTypes.ITEM_NAME)) {
-				int silkTouchLevel = player.getStackInHand(player.getActiveHand()).getEnchantments().getLevel(world.getRegistryManager().get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.SILK_TOUCH).get());
-				if (silkTouchLevel < 1) {
-					@Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.id().get());
-					if (skinValues != null) {
-						System.out.println("Setting new Skin values yoo");
-
-						ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, skinValues[2]));
-						newProfile.properties().clear();
-						newProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
-						profileComponent = newProfile;
-
-						String nameString = Text.Serialization.toJsonString(componentMap.get(DataComponentTypes.ITEM_NAME), DynamicRegistryManager.EMPTY);
-						System.out.println(nameString);
-						int index = nameString.indexOf('§');
-						char nameColor = nameString.charAt(index + 1);
-						Text nameText = Text.of("§" + nameColor + "§l" + skinValues[2] + "'s §f§lHead");
-						headStack.set(DataComponentTypes.ITEM_NAME, nameText);
-
-					}
-				}
-			}
-
-		}
-
-		headStack.set(DataComponentTypes.PROFILE, profileComponent);
-
-		ItemEntity playerHeadDrop = new ItemEntity(
-				world,
-				pos.getX(),
-				pos.getY(),
-				pos.getZ(),
-				headStack
-		);
-
-		world.spawnEntity(playerHeadDrop);
-
-		// Cancel the default drops
-		world.removeBlockEntity(pos);
-		world.setBlockState(pos, Blocks.AIR.getDefaultState());
-
-	}
 
 }
