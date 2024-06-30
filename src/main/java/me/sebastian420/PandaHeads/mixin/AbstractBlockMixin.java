@@ -31,8 +31,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
 import java.util.UUID;
 
-@Mixin(AbstractBlock.class)
-public class BlockMixin {
+@Mixin(net.minecraft.block.AbstractBlock.class)
+public class AbstractBlockMixin {
 
     @Unique
     private static final Style UNKNOWN_STYLE = Style.EMPTY.withColor(Formatting.GRAY).withBold(true);
