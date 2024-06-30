@@ -2,6 +2,7 @@ package me.sebastian420.PandaHeads.mixin;
 
 
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import me.sebastian420.PandaHeads.SkinUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -39,7 +40,14 @@ public class BlockMixin {
             ComponentMap.Builder newBlockEntityComponents = ComponentMap.builder();
             if (name != null) {
                 System.out.println("Profile set liek dis");
-                newBlockEntityComponents.add(DataComponentTypes.PROFILE, new ProfileComponent(new GameProfile(uuid, name)));
+                System.out.println(uuid);
+                System.out.println(name);
+                ProfileComponent profileComponent = new ProfileComponent(new GameProfile(uuid, name));
+                Property property = itemStack.get(DataComponentTypes.PROFILE).properties().get("textures").iterator().next();
+                profileComponent.properties().clear();
+                profileComponent.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                newBlockEntityComponents.add(DataComponentTypes.PROFILE, profileComponent);
+
             } else {
                 System.out.println("Profile set like dat");
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, itemStack.get(DataComponentTypes.PROFILE));
@@ -64,6 +72,9 @@ public class BlockMixin {
             }
 
             blockEntity.setComponents(newBlockEntityComponents.build());
+            Property property = itemStack.get(DataComponentTypes.PROFILE).properties().get("textures").iterator().next();
+            blockEntity.getComponents().get(DataComponentTypes.PROFILE).properties().clear();
+            blockEntity.getComponents().get(DataComponentTypes.PROFILE).properties().put("textures", new Property(property.name(), property.value(), property.signature()));
         }
     }
 }
