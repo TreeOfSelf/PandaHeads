@@ -96,15 +96,11 @@ public class AbstractBlockMixin {
                         if (silkLevel < 1) {
                             @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.id().get());
                             if (skinValues != null) {
-                                System.out.println("Setting new Skin values yoo");
-
                                 ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, skinValues[2]));
                                 newProfile.properties().clear();
                                 newProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
                                 profileComponent = newProfile;
-
                                 String nameString = Text.Serialization.toJsonString(componentMap.get(DataComponentTypes.ITEM_NAME), DynamicRegistryManager.EMPTY);
-                                System.out.println(nameString);
                                 int index = nameString.indexOf('§');
                                 char nameColor = nameString.charAt(index + 1);
                                 Text nameText = Text.of("§" + nameColor + "§l" + skinValues[2] + "'s §f§lHead");
@@ -117,9 +113,7 @@ public class AbstractBlockMixin {
                 }
 
                 headStack.set(DataComponentTypes.PROFILE, profileComponent);
-
-                // Add some ItemStacks to the list
-                itemStackList.add(headStack); // 64 diamonds
+                itemStackList.add(headStack);
                 cir.setReturnValue(itemStackList);
 
             }
