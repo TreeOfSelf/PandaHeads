@@ -32,20 +32,24 @@ public class BlockMixin {
         if (itemStack.getItem() == Items.PLAYER_HEAD){
             BlockEntity blockEntity = world.getBlockEntity(pos);
 
-            if (blockEntity == null || blockEntity.getType() != BlockEntityType.SKULL) return;
+            if (blockEntity == null ||
+                    blockEntity.getType() != BlockEntityType.SKULL ||
+                    !blockEntity.getComponents().contains(DataComponentTypes.LORE) ||
+                    blockEntity.getComponents().get(DataComponentTypes.LORE).lines().isEmpty()) return;
 
             ComponentMap componentMap = itemStack.getComponents();
             UUID uuid = SkinUtils.getUUIDFromComponentMap(componentMap);
             String name = SkinUtils.getNameFromComponentMap(componentMap);
             ComponentMap.Builder newBlockEntityComponents = ComponentMap.builder();
+
+
             if (name != null) {
-                System.out.println("Profile set liek dis");
-                System.out.println(uuid);
-                System.out.println(name);
                 ProfileComponent profileComponent = new ProfileComponent(new GameProfile(uuid, name));
-                Property property = itemStack.get(DataComponentTypes.PROFILE).properties().get("textures").iterator().next();
-                profileComponent.properties().clear();
-                profileComponent.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                if (itemStack.get(DataComponentTypes.PROFILE).properties().containsKey("textures")) {
+                    Property property = itemStack.get(DataComponentTypes.PROFILE).properties().get("textures").iterator().next();
+                    profileComponent.properties().clear();
+                    profileComponent.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                }
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, profileComponent);
 
             } else {
@@ -72,9 +76,6 @@ public class BlockMixin {
             }
 
             blockEntity.setComponents(newBlockEntityComponents.build());
-            Property property = itemStack.get(DataComponentTypes.PROFILE).properties().get("textures").iterator().next();
-            blockEntity.getComponents().get(DataComponentTypes.PROFILE).properties().clear();
-            blockEntity.getComponents().get(DataComponentTypes.PROFILE).properties().put("textures", new Property(property.name(), property.value(), property.signature()));
         }
     }
 }

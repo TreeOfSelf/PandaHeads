@@ -98,9 +98,8 @@ public class JsonReader {
                         }
 
                         newBlockEntityComponents.add(DataComponentTypes.LORE, new LoreComponent(loreList));
+                        displayName = displayName.replace("§a","§f");
                         newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, Text.of(displayName));
-                        newBlockEntityComponents.add(DataComponentTypes.CUSTOM_NAME, Text.of(displayName));
-
                         blockEntity.setComponents(newBlockEntityComponents.build());
 
                         System.out.println();

@@ -48,14 +48,15 @@ public class AbstractBlockMixin {
 
                 BlockEntity blockEntity = builder.get(LootContextParameters.BLOCK_ENTITY);
 
-
                 ComponentMap componentMap = blockEntity.getComponents();
                 if (componentMap == null || !componentMap.contains(DataComponentTypes.PROFILE)) {
                     componentMap = blockEntity.createComponentMap();
                 } else {
+                    if (blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).properties().containsKey("textures")){
                     Property property = blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).properties().get("textures").iterator().next();
                     componentMap.get(DataComponentTypes.PROFILE).properties().clear();
                     componentMap.get(DataComponentTypes.PROFILE).properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                    }
                 }
 
 
@@ -73,10 +74,14 @@ public class AbstractBlockMixin {
                         name = "Unknown";
                         brokenHead = true;
                     }
+
                     ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, name));
-                    newProfile.properties().clear();
-                    Property property = profileComponent.properties().get("textures").iterator().next();
-                    newProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                    if (profileComponent.properties().containsKey("textures")) {
+                        newProfile.properties().clear();
+                        Property property = profileComponent.properties().get("textures").iterator().next();
+                        newProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                    }
+
                     profileComponent = newProfile;
                 }
 

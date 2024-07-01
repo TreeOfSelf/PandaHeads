@@ -139,6 +139,11 @@ public abstract class ServerPlayerEntityMixin {
 		player_skull.set(DataComponentTypes.ITEM_NAME,nameText);
 		player_skull.set(DataComponentTypes.LORE, new LoreComponent(loreList));
 		player_skull.set(DataComponentTypes.PROFILE, new ProfileComponent(serverPlayerEntity.getGameProfile()));
-		serverPlayerEntity.getInventory().insertStack(player_skull);
+		if (serverPlayerEntity.getInventory().getEmptySlot() == -1) {
+			serverPlayerEntity.dropStack(player_skull);
+		} else {
+			serverPlayerEntity.getInventory().insertStack(player_skull);
+		}
+
 	}
 }
