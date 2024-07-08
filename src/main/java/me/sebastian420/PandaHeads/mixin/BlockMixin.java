@@ -10,10 +10,13 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.component.ComponentMap;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -53,10 +56,10 @@ public class BlockMixin {
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, profileComponent);
 
             } else {
-                System.out.println("Profile set like dat");
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, itemStack.get(DataComponentTypes.PROFILE));
             }
             newBlockEntityComponents.add(DataComponentTypes.LORE, itemStack.get(DataComponentTypes.LORE));
+
 
             if ( componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
                     ((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
@@ -67,12 +70,18 @@ public class BlockMixin {
                 if (skinValues != null) {
                     newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, Text.of("§f§l" + skinValues[2] + "'s §f§lHead"));
                 } else {
-                    newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, itemStack.get(DataComponentTypes.CUSTOM_NAME));
+                    if (itemStack.contains(DataComponentTypes.CUSTOM_DATA))  newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, itemStack.get(DataComponentTypes.CUSTOM_NAME));
                 }
 
             } else {
-                newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, itemStack.get(DataComponentTypes.ITEM_NAME));
+                if (itemStack.contains(DataComponentTypes.ITEM_NAME)) newBlockEntityComponents.add(DataComponentTypes.ITEM_NAME, itemStack.get(DataComponentTypes.ITEM_NAME));
+            }
 
+            if (componentMap.contains(DataComponentTypes.CUSTOM_NAME)) {
+                String jsonString = Text.Serialization.toJsonString(componentMap.get(DataComponentTypes.CUSTOM_NAME), DynamicRegistryManager.EMPTY);
+                NbtCompound nbtCompound = new NbtCompound();
+                nbtCompound.putString("custom_name",jsonString);
+                newBlockEntityComponents.add(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbtCompound));
             }
 
             blockEntity.setComponents(newBlockEntityComponents.build());
