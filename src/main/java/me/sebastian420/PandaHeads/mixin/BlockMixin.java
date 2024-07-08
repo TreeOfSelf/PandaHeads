@@ -35,10 +35,7 @@ public class BlockMixin {
         if (itemStack.getItem() == Items.PLAYER_HEAD){
             BlockEntity blockEntity = world.getBlockEntity(pos);
 
-            if (blockEntity == null ||
-                    blockEntity.getType() != BlockEntityType.SKULL ||
-                    !blockEntity.getComponents().contains(DataComponentTypes.LORE) ||
-                    blockEntity.getComponents().get(DataComponentTypes.LORE).lines().isEmpty()) return;
+            if (blockEntity == null || blockEntity.getType() != BlockEntityType.SKULL) return;
 
             ComponentMap componentMap = itemStack.getComponents();
             UUID uuid = SkinUtils.getUUIDFromComponentMap(componentMap);
@@ -58,6 +55,7 @@ public class BlockMixin {
             } else {
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, itemStack.get(DataComponentTypes.PROFILE));
             }
+
             newBlockEntityComponents.add(DataComponentTypes.LORE, itemStack.get(DataComponentTypes.LORE));
 
 

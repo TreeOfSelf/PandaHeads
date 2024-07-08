@@ -86,15 +86,11 @@ public class AbstractBlockMixin {
                 profileComponent = newProfile;
             }
 
-            //If missing lore
-            if (!componentMap.contains(DataComponentTypes.LORE) || (componentMap.get(DataComponentTypes.LORE).lines().isEmpty())){
-                headStack.set(DataComponentTypes.LORE, LoreComponent.DEFAULT.with(Text.of("This head's origin has been lost to time").getWithStyle(UNKNOWN_STYLE_LORE).getFirst()));
-            }
+
 
 
             if (!brokenHead) {
                 if (componentMap.contains(DataComponentTypes.ITEM_NAME)) headStack.set(DataComponentTypes.ITEM_NAME, componentMap.get(DataComponentTypes.ITEM_NAME));
-                headStack.set(DataComponentTypes.LORE, componentMap.get(DataComponentTypes.LORE));
 
                 //Update skin and name
                 if(profileComponent.id().isPresent() && componentMap.contains(DataComponentTypes.ITEM_NAME)) {
@@ -114,7 +110,12 @@ public class AbstractBlockMixin {
                         }
                     }
                 }
+            }
 
+            if (componentMap.contains(DataComponentTypes.LORE)) headStack.set(DataComponentTypes.LORE, componentMap.get(DataComponentTypes.LORE));
+            //If missing lore
+            if (!componentMap.contains(DataComponentTypes.LORE) || (componentMap.get(DataComponentTypes.LORE).lines().isEmpty())){
+                headStack.set(DataComponentTypes.LORE, LoreComponent.DEFAULT.with(Text.of("This head's origin has been lost to time").getWithStyle(UNKNOWN_STYLE_LORE).getFirst()));
             }
 
             if(componentMap.contains(DataComponentTypes.CUSTOM_DATA)){
