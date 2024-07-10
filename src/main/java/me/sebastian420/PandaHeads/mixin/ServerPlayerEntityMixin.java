@@ -1,8 +1,7 @@
 package me.sebastian420.PandaHeads.mixin;
 
-import com.google.gson.JsonObject;
-import com.mojang.authlib.properties.Property;
-import me.sebastian420.PandaHeads.SkinUtils;
+import net.minecraft.block.NoteBlock;
+import net.minecraft.block.enums.NoteBlockInstrument;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
 import net.minecraft.component.type.ProfileComponent;
@@ -13,14 +12,10 @@ import net.minecraft.network.encryption.PublicPlayerSession;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.stat.StatType;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.JsonHelper;
-import net.minecraft.util.profiling.jfr.sample.FileIoSample;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -139,6 +134,7 @@ public abstract class ServerPlayerEntityMixin {
 		player_skull.set(DataComponentTypes.ITEM_NAME,nameText);
 		player_skull.set(DataComponentTypes.LORE, new LoreComponent(loreList));
 		player_skull.set(DataComponentTypes.PROFILE, new ProfileComponent(serverPlayerEntity.getGameProfile()));
+		player_skull.set(DataComponentTypes.NOTE_BLOCK_SOUND, NoteBlockInstrument.ZOMBIE.getSound().value().getId());
 		if (serverPlayerEntity.getInventory().getEmptySlot() == -1) {
 			serverPlayerEntity.dropStack(player_skull);
 		} else {

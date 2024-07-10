@@ -53,7 +53,7 @@ public class AbstractBlockMixin {
 
             if (!componentMap.contains(DataComponentTypes.PROFILE)) return;
 
-            if (componentMap == null || !componentMap.contains(DataComponentTypes.PROFILE)) {
+            if (!componentMap.contains(DataComponentTypes.PROFILE)) {
                 componentMap = blockEntity.createComponentMap();
             } else {
                 if (blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).properties().containsKey("textures")){
@@ -126,6 +126,11 @@ public class AbstractBlockMixin {
                 if(customData.contains("custom_name")){
                     headStack.set(DataComponentTypes.CUSTOM_NAME, Text.Serialization.fromJson(customData.getString("custom_name"), DynamicRegistryManager.EMPTY));
                 }
+            }
+
+            if(componentMap.contains(DataComponentTypes.NOTE_BLOCK_SOUND)){
+                headStack.set(DataComponentTypes.NOTE_BLOCK_SOUND, componentMap.get(DataComponentTypes.NOTE_BLOCK_SOUND));
+
             }
 
             headStack.set(DataComponentTypes.PROFILE, profileComponent);
