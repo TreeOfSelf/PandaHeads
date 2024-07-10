@@ -50,6 +50,9 @@ public class AbstractBlockMixin {
             BlockEntity blockEntity = builder.get(LootContextParameters.BLOCK_ENTITY);
 
             ComponentMap componentMap = blockEntity.getComponents();
+
+            if (!componentMap.contains(DataComponentTypes.PROFILE)) return;
+
             if (componentMap == null || !componentMap.contains(DataComponentTypes.PROFILE)) {
                 componentMap = blockEntity.createComponentMap();
             } else {

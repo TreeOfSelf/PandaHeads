@@ -121,7 +121,11 @@ public class SkinUtils {
             }
 
         }else{
-            uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
+            if (componentMap.contains(DataComponentTypes.PROFILE)) {
+                uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
+            } else {
+                return null;
+            }
         }
         return(uuid);
     }
