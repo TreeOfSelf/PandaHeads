@@ -16,6 +16,7 @@ import net.minecraft.stat.Stats;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -92,33 +93,47 @@ public abstract class ServerPlayerEntityMixin {
 		int lastDeathTime = serverPlayerEntity.getStatHandler().getStat(Stats.CUSTOM, Stats.TIME_SINCE_DEATH)/20;
 		int playHours = serverPlayerEntity.getStatHandler().getStat(Stats.CUSTOM, Stats.PLAY_TIME)/20/60/60;
 
+		Identifier sound = null;
+
 		String nameColor = "f";
 		if (playHours>=1 && playHours<3){
 			nameColor="7";
 		}else if(playHours>=3 && playHours<6){
 			nameColor="a";
+			sound  = NoteBlockInstrument.HAT.getSound().value().getId();
 		}else if(playHours>=6 && playHours<10){
 			nameColor="2";
+			sound  = NoteBlockInstrument.BASEDRUM.getSound().value().getId();
 		}else if(playHours>=10 && playHours<24){
 			nameColor="b";
+			sound  = NoteBlockInstrument.SNARE.getSound().value().getId();
 		}else if(playHours>=24 && playHours<48) {
 			nameColor = "9";
+			sound  = NoteBlockInstrument.BASS.getSound().value().getId();
 		}else if(playHours>=48 && playHours<72) {
 			nameColor = "3";
+			sound  = NoteBlockInstrument.BELL.getSound().value().getId();
 		}else if(playHours>=72 && playHours<168) {
 			nameColor = "1";
+			sound  = NoteBlockInstrument.COW_BELL.getSound().value().getId();
 		}else if(playHours>=168 && playHours<336) {
 			nameColor = "d";
+			sound  = NoteBlockInstrument.CHIME.getSound().value().getId();
 		}else if(playHours>=336 && playHours<504) {
 			nameColor = "5";
+			sound  = NoteBlockInstrument.IRON_XYLOPHONE.getSound().value().getId();
 		}else if(playHours>=504 && playHours<672) {
 			nameColor = "e";
+			sound  = NoteBlockInstrument.PLING.getSound().value().getId();
 		}else if(playHours>=672 && playHours<1344) {
 			nameColor = "6";
+			sound  = NoteBlockInstrument.BANJO.getSound().value().getId();
 		}else if(playHours>=1344 && playHours<2016) {
 			nameColor = "c";
+			sound  = NoteBlockInstrument.BIT.getSound().value().getId();
 		}else if(playHours>=2016) {
 			nameColor = "4";
+			sound  = NoteBlockInstrument.DRAGON.getSound().value().getId();
 		}
 
 
@@ -134,7 +149,7 @@ public abstract class ServerPlayerEntityMixin {
 		player_skull.set(DataComponentTypes.ITEM_NAME,nameText);
 		player_skull.set(DataComponentTypes.LORE, new LoreComponent(loreList));
 		player_skull.set(DataComponentTypes.PROFILE, new ProfileComponent(serverPlayerEntity.getGameProfile()));
-		player_skull.set(DataComponentTypes.NOTE_BLOCK_SOUND, NoteBlockInstrument.ZOMBIE.getSound().value().getId());
+		if (sound != null) player_skull.set(DataComponentTypes.NOTE_BLOCK_SOUND, sound);
 		if (serverPlayerEntity.getInventory().getEmptySlot() == -1) {
 			serverPlayerEntity.dropStack(player_skull);
 		} else {
