@@ -1,4 +1,4 @@
-package me.sebastian420.PandaHeads;
+package me.TreeOfSelf.PandaHeads;
 
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;

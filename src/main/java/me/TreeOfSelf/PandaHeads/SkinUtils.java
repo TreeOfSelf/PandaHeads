@@ -1,4 +1,4 @@
-package me.sebastian420.PandaHeads;
+package me.TreeOfSelf.PandaHeads;
 
 import com.google.gson.JsonParser;
 import net.minecraft.component.ComponentMap;

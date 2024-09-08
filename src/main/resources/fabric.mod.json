@@ -5,18 +5,18 @@
 	"name": "panda-heads",
 	"description": "Cool player heads",
 	"authors": [
-		"Sebastian420"
+		"TreeOfSelf"
 	],
 	"contact": {
-		"homepage": "",
-		"sources": ""
+		"homepage": "https://github.com/TreeOfSelf/PandaHeads",
+		"sources": "https://github.com/TreeOfSelf/PandaHeads"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/panda-heads/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"me.sebastian420.PandaHeads.PandaHeads"
+          "me.TreeOfSelf.PandaHeads.PandaHeads"
 		]
 	},
 	"mixins": [
@@ -24,7 +24,7 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.15.11",
-		"minecraft": "~1.21",
+		"minecraft": "~1.21.1",
 		"java": ">=21",
 		"fabric-api": "*"
 	},

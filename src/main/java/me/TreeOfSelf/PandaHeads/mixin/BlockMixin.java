@@ -1,6 +1,6 @@
-package me.sebastian420.PandaHeads.mixin;
+package me.TreeOfSelf.PandaHeads.mixin;
 
-import me.sebastian420.PandaHeads.HeadPlacer;
+import me.TreeOfSelf.PandaHeads.HeadPlacer;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
@@ -12,8 +12,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.util.UUID;
 
 @Mixin(Block.class)
 public class BlockMixin {

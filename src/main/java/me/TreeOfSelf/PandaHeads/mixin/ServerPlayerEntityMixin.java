@@ -1,4 +1,4 @@
-package me.sebastian420.PandaHeads.mixin;
+package me.TreeOfSelf.PandaHeads.mixin;
 
 import net.minecraft.block.NoteBlock;
 import net.minecraft.block.enums.NoteBlockInstrument;

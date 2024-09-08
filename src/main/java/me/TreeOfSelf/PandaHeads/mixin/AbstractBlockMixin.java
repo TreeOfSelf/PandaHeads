@@ -1,8 +1,8 @@
-package me.sebastian420.PandaHeads.mixin;
+package me.TreeOfSelf.PandaHeads.mixin;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import me.sebastian420.PandaHeads.SkinUtils;
+import me.TreeOfSelf.PandaHeads.SkinUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.ComponentMap;
