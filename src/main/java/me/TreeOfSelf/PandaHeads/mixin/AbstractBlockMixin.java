@@ -12,8 +12,8 @@ import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.RegistryKeys;
@@ -41,10 +41,10 @@ public class AbstractBlockMixin {
     private static final Style UNKNOWN_STYLE_LORE  = Style.EMPTY.withColor(Formatting.GRAY).withItalic(true);
 
     @Inject(at = @At("TAIL"), method = "getDroppedStacks", cancellable = true)
-    private void getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder, CallbackInfoReturnable<List<ItemStack>> cir) {
+    private void getDroppedStacks(BlockState state, LootWorldContext.Builder builder, CallbackInfoReturnable<List<ItemStack>> cir) {
         if (state.getBlock() == Blocks.PLAYER_HEAD || state.getBlock() == Blocks.PLAYER_WALL_HEAD) {
             ServerWorld world = builder.getWorld();
-            int silkLevel = builder.get(LootContextParameters.TOOL).getEnchantments().getLevel(world.getRegistryManager().get(RegistryKeys.ENCHANTMENT).getEntry(Enchantments.SILK_TOUCH).get());
+            int silkLevel = builder.get(LootContextParameters.TOOL).getEnchantments().getLevel(world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(Enchantments.SILK_TOUCH));
             List<ItemStack> itemStackList = new ArrayList<>();
 
             BlockEntity blockEntity = builder.get(LootContextParameters.BLOCK_ENTITY);
