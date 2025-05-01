@@ -124,7 +124,7 @@ public class AbstractBlockMixin {
             if(componentMap.contains(DataComponentTypes.CUSTOM_DATA)){
                 NbtCompound customData = componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt();
                 if(customData.contains("custom_name")){
-                    headStack.set(DataComponentTypes.CUSTOM_NAME, Text.Serialization.fromJson(customData.getString("custom_name"), DynamicRegistryManager.EMPTY));
+                    headStack.set(DataComponentTypes.CUSTOM_NAME, Text.Serialization.fromJson(customData.getString("custom_name").get(), DynamicRegistryManager.EMPTY));
                 }
             }
 

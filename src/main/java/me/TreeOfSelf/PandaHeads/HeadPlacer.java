@@ -53,7 +53,7 @@ public class HeadPlacer {
 
             if (componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
                     ((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
-                            componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner"))) {
+                            componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").get().contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner"))) {
 
                 @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(uuid);
 

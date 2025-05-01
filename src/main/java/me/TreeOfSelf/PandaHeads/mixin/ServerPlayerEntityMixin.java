@@ -147,7 +147,7 @@ public abstract class ServerPlayerEntityMixin {
 
 		Text nameText = Text.of("§"+nameColor+"§l" +serverPlayerEntity.getName().getString()+"'s §f§lHead");
 
-		ItemStack player_skull = ItemStack.fromNbtOrEmpty(this.getServerWorld().getRegistryManager(), tag);
+		ItemStack player_skull = ItemStack.fromNbt(this.getServerWorld().getRegistryManager(), tag).get();
 		player_skull.set(DataComponentTypes.ITEM_NAME,nameText);
 		player_skull.set(DataComponentTypes.LORE, new LoreComponent(loreList));
 		player_skull.set(DataComponentTypes.PROFILE, new ProfileComponent(serverPlayerEntity.getGameProfile()));
