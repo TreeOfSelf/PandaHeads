@@ -115,7 +115,23 @@ public class AbstractBlockMixin {
                 }
             }
 
-            if (componentMap.contains(DataComponentTypes.LORE)) headStack.set(DataComponentTypes.LORE, componentMap.get(DataComponentTypes.LORE));
+            if (componentMap.contains(DataComponentTypes.LORE)) {
+                LoreComponent lore = componentMap.get(DataComponentTypes.LORE);
+                List<Text> newLoreLines = new ArrayList<>();
+                DynamicRegistryManager registryManager = world.getRegistryManager();
+                for (Text line : lore.lines()) {
+                    Text newLine = line;
+                    if (line.getString().startsWith("{")) {
+                        try {
+                            newLine = Text.Serialization.fromJson(line.getString(), registryManager);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    newLoreLines.add(newLine);
+                }
+                headStack.set(DataComponentTypes.LORE, new LoreComponent(newLoreLines));
+            }
+            
             //If missing lore
             if (!componentMap.contains(DataComponentTypes.LORE) || (componentMap.get(DataComponentTypes.LORE).lines().isEmpty())){
                 headStack.set(DataComponentTypes.LORE, LoreComponent.DEFAULT.with(Text.of("This head's origin has been lost to time").getWithStyle(UNKNOWN_STYLE_LORE).getFirst()));
@@ -123,14 +139,49 @@ public class AbstractBlockMixin {
 
             if(componentMap.contains(DataComponentTypes.CUSTOM_DATA)){
                 NbtCompound customData = componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt();
-                if(customData.contains("custom_name")){
-                    headStack.set(DataComponentTypes.CUSTOM_NAME, Text.Serialization.fromJson(customData.getString("custom_name").get(), DynamicRegistryManager.EMPTY));
+                if (customData.contains("custom_name")) {
+                    java.util.Optional<String> optionalCustomNameString = customData.getString("custom_name");
+
+                    if (optionalCustomNameString.isPresent()) {
+                        String customNameString = optionalCustomNameString.get();
+                        if (!customNameString.isEmpty()) {
+                            Text customNameText;
+                            if (customNameString.startsWith("{")) {
+                                try {
+                                    customNameText = Text.Serialization.fromJson(customNameString, world.getRegistryManager());
+                                } catch (Exception ignored) {
+                                    customNameText = Text.of(customNameString);
+                                }
+                            } else {
+                                customNameText = Text.of(customNameString);
+                            }
+                                                     
+                            headStack.set(DataComponentTypes.ITEM_NAME, customNameText);
+                            headStack.set(DataComponentTypes.CUSTOM_NAME, customNameText);
+                        }
+                    }
+                }
+            } else if (componentMap.contains(DataComponentTypes.ITEM_NAME)) {
+                Text itemName = componentMap.get(DataComponentTypes.ITEM_NAME);
+                if (itemName != null && !itemName.getString().isEmpty()) {
+                    String itemNameString = itemName.getString();
+                    Text finalCustomNameText;
+                    if (itemNameString.startsWith("{")) {
+                        try {
+                            finalCustomNameText = Text.Serialization.fromJson(itemNameString, world.getRegistryManager());
+                        } catch (Exception ignored) {
+                            finalCustomNameText = itemName;
+                        }
+                    } else {
+                        finalCustomNameText = itemName;
+                    }
+                    headStack.set(DataComponentTypes.ITEM_NAME, finalCustomNameText);
+                    headStack.set(DataComponentTypes.CUSTOM_NAME, finalCustomNameText);
                 }
             }
 
             if(componentMap.contains(DataComponentTypes.NOTE_BLOCK_SOUND)){
                 headStack.set(DataComponentTypes.NOTE_BLOCK_SOUND, componentMap.get(DataComponentTypes.NOTE_BLOCK_SOUND));
-
             }
 
             headStack.set(DataComponentTypes.PROFILE, profileComponent);

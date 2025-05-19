@@ -149,6 +149,7 @@ public abstract class ServerPlayerEntityMixin {
 
 		ItemStack player_skull = ItemStack.fromNbt(this.getServerWorld().getRegistryManager(), tag).get();
 		player_skull.set(DataComponentTypes.ITEM_NAME,nameText);
+		player_skull.set(DataComponentTypes.CUSTOM_NAME,nameText);
 		player_skull.set(DataComponentTypes.LORE, new LoreComponent(loreList));
 		player_skull.set(DataComponentTypes.PROFILE, new ProfileComponent(serverPlayerEntity.getGameProfile()));
 		if (sound != null) player_skull.set(DataComponentTypes.NOTE_BLOCK_SOUND, sound);

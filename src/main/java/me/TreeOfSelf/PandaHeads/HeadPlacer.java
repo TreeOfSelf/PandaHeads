@@ -70,10 +70,7 @@ public class HeadPlacer {
             }
 
             if (componentMap.contains(DataComponentTypes.CUSTOM_NAME)) {
-                String jsonString = Text.Serialization.toJsonString(componentMap.get(DataComponentTypes.CUSTOM_NAME), DynamicRegistryManager.EMPTY);
-                NbtCompound nbtCompound = new NbtCompound();
-                nbtCompound.putString("custom_name", jsonString);
-                newBlockEntityComponents.add(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbtCompound));
+                newBlockEntityComponents.add(DataComponentTypes.CUSTOM_NAME, componentMap.get(DataComponentTypes.CUSTOM_NAME));
             }
 
             if (componentMap.contains(DataComponentTypes.NOTE_BLOCK_SOUND)) {
