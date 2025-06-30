@@ -1,7 +1,12 @@
 package me.TreeOfSelf.PandaHeads.mixin;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.JsonOps;
 import me.TreeOfSelf.PandaHeads.SkinUtils;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -20,6 +25,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextCodecs;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -96,15 +102,18 @@ public class AbstractBlockMixin {
                 if (componentMap.contains(DataComponentTypes.ITEM_NAME)) headStack.set(DataComponentTypes.ITEM_NAME, componentMap.get(DataComponentTypes.ITEM_NAME));
 
                 //Update skin and name
-                if(profileComponent.id().isPresent() && componentMap.contains(DataComponentTypes.ITEM_NAME)) {
+                if(profileComponent.uuid().isPresent() && componentMap.contains(DataComponentTypes.ITEM_NAME)) {
                     if (silkLevel < 1) {
-                        @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.id().get());
+                        @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.uuid().get());
                         if (skinValues != null) {
                             ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, skinValues[2]));
                             newProfile.properties().clear();
                             newProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
                             profileComponent = newProfile;
-                            String nameString = Text.Serialization.toJsonString(componentMap.get(DataComponentTypes.ITEM_NAME), DynamicRegistryManager.EMPTY);
+
+                            DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(JsonOps.INSTANCE, (Text) DataComponentTypes.ITEM_NAME);
+                            String nameString = json.getOrThrow().getAsString();
+
                             int index = nameString.indexOf('§');
                             char nameColor = nameString.charAt(index + 1);
                             Text nameText = Text.of("§" + nameColor + "§l" + skinValues[2] + "'s §f§lHead");
@@ -123,7 +132,11 @@ public class AbstractBlockMixin {
                     Text newLine = line;
                     if (line.getString().startsWith("{")) {
                         try {
-                            newLine = Text.Serialization.fromJson(line.getString(), registryManager);
+
+                            JsonElement jsonElement = JsonParser.parseString(line.getString());
+                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(JsonOps.INSTANCE, jsonElement);
+                            newLine = result.getOrThrow().getFirst();
+
                         } catch (Exception ignored) {
                         }
                     }
@@ -148,7 +161,9 @@ public class AbstractBlockMixin {
                             Text customNameText;
                             if (customNameString.startsWith("{")) {
                                 try {
-                                    customNameText = Text.Serialization.fromJson(customNameString, world.getRegistryManager());
+                                    JsonElement jsonElement = JsonParser.parseString(customNameString);
+                                    DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(JsonOps.INSTANCE, jsonElement);
+                                    customNameText = result.getOrThrow().getFirst();
                                 } catch (Exception ignored) {
                                     customNameText = Text.of(customNameString);
                                 }
@@ -168,7 +183,9 @@ public class AbstractBlockMixin {
                     Text finalCustomNameText;
                     if (itemNameString.startsWith("{")) {
                         try {
-                            finalCustomNameText = Text.Serialization.fromJson(itemNameString, world.getRegistryManager());
+                            JsonElement jsonElement = JsonParser.parseString(itemNameString);
+                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(JsonOps.INSTANCE, jsonElement);
+                            finalCustomNameText = result.getOrThrow().getFirst();
                         } catch (Exception ignored) {
                             finalCustomNameText = itemName;
                         }
