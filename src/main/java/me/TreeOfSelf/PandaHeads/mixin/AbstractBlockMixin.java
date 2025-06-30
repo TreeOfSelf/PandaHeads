@@ -111,7 +111,7 @@ public class AbstractBlockMixin {
                             newProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
                             profileComponent = newProfile;
 
-                            DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(JsonOps.INSTANCE, (Text) DataComponentTypes.ITEM_NAME);
+                            DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(JsonOps.INSTANCE, componentMap.get(DataComponentTypes.ITEM_NAME));
                             String nameString = json.getOrThrow().getAsString();
 
                             int index = nameString.indexOf('§');
@@ -132,11 +132,9 @@ public class AbstractBlockMixin {
                     Text newLine = line;
                     if (line.getString().startsWith("{")) {
                         try {
-
                             JsonElement jsonElement = JsonParser.parseString(line.getString());
                             DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(JsonOps.INSTANCE, jsonElement);
                             newLine = result.getOrThrow().getFirst();
-
                         } catch (Exception ignored) {
                         }
                     }
