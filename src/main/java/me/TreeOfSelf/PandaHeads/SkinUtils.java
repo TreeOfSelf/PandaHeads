@@ -122,7 +122,7 @@ public class SkinUtils {
 
         }else{
             if (componentMap.contains(DataComponentTypes.PROFILE)) {
-                uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
+                uuid = componentMap.get(DataComponentTypes.PROFILE).uuid().get();
             } else {
                 return null;
             }
@@ -149,7 +149,7 @@ public class SkinUtils {
                 return null;
             }
         }else{
-            uuid = componentMap.get(DataComponentTypes.PROFILE).id().get();
+            uuid = componentMap.get(DataComponentTypes.PROFILE).uuid().get();
             String name = componentMap.get(DataComponentTypes.PROFILE).name().get();
             if (name.isEmpty() || name.isBlank()){
                 @Nullable String[] skinVals = SkinUtils.fetchSkinByUUID(uuid);
