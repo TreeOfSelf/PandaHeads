@@ -8,6 +8,7 @@ import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.encryption.PublicPlayerSession;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -35,15 +36,9 @@ import java.util.List;
 
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin {
-	@Shadow @Nullable public abstract Text getPlayerListName();
 
-	@Shadow public abstract ServerWorld getServerWorld();
+	@Shadow public abstract ServerWorld getWorld();
 
-	@Shadow @Final public ServerPlayerInteractionManager interactionManager;
-
-	@Shadow @Nullable private PublicPlayerSession session;
-
-	@Shadow @Final public MinecraftServer server;
 	private static final Style DEATH_TIME = Style.EMPTY.withColor(Formatting.WHITE).withItalic(false);
 	private static final Style DEATH_REASON_STYLE = Style.EMPTY.withColor(Formatting.RED).withItalic(true).withItalic(false);
 	private static final Style DATE_STYLE = Style.EMPTY.withColor(Formatting.YELLOW).withBold(true).withItalic(false);
@@ -147,14 +142,17 @@ public abstract class ServerPlayerEntityMixin {
 
 		Text nameText = Text.of("§"+nameColor+"§l" +serverPlayerEntity.getName().getString()+"'s §f§lHead");
 
-		ItemStack player_skull = ItemStack.fromNbt(this.getServerWorld().getRegistryManager(), tag).get();
+
+		ItemStack player_skull = ItemStack.CODEC.parse(this.getWorld().getRegistryManager().getOps(NbtOps.INSTANCE), tag)
+				.getOrThrow(error -> new RuntimeException("Failed to parse ItemStack: " + error));
+
 		player_skull.set(DataComponentTypes.ITEM_NAME,nameText);
 		player_skull.set(DataComponentTypes.CUSTOM_NAME,nameText);
 		player_skull.set(DataComponentTypes.LORE, new LoreComponent(loreList));
 		player_skull.set(DataComponentTypes.PROFILE, new ProfileComponent(serverPlayerEntity.getGameProfile()));
 		if (sound != null) player_skull.set(DataComponentTypes.NOTE_BLOCK_SOUND, sound);
 		if (serverPlayerEntity.getInventory().getEmptySlot() == -1) {
-			serverPlayerEntity.dropStack(serverPlayerEntity.getServerWorld(),player_skull);
+			serverPlayerEntity.dropStack(serverPlayerEntity.getWorld(),player_skull);
 		} else {
 			serverPlayerEntity.getInventory().insertStack(player_skull);
 		}
