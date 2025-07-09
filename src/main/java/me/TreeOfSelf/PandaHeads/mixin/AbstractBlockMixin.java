@@ -111,7 +111,7 @@ public class AbstractBlockMixin {
                             newProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
                             profileComponent = newProfile;
 
-                            DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(JsonOps.INSTANCE, componentMap.get(DataComponentTypes.ITEM_NAME));
+                            DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), componentMap.get(DataComponentTypes.ITEM_NAME));
                             String nameString = json.getOrThrow().getAsString();
 
                             int index = nameString.indexOf('§');
@@ -133,7 +133,7 @@ public class AbstractBlockMixin {
                     if (line.getString().startsWith("{")) {
                         try {
                             JsonElement jsonElement = JsonParser.parseString(line.getString());
-                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(JsonOps.INSTANCE, jsonElement);
+                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
                             newLine = result.getOrThrow().getFirst();
                         } catch (Exception ignored) {
                         }
@@ -160,7 +160,7 @@ public class AbstractBlockMixin {
                             if (customNameString.startsWith("{")) {
                                 try {
                                     JsonElement jsonElement = JsonParser.parseString(customNameString);
-                                    DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(JsonOps.INSTANCE, jsonElement);
+                                    DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
                                     customNameText = result.getOrThrow().getFirst();
                                 } catch (Exception ignored) {
                                     customNameText = Text.of(customNameString);
@@ -182,7 +182,7 @@ public class AbstractBlockMixin {
                     if (itemNameString.startsWith("{")) {
                         try {
                             JsonElement jsonElement = JsonParser.parseString(itemNameString);
-                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(JsonOps.INSTANCE, jsonElement);
+                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
                             finalCustomNameText = result.getOrThrow().getFirst();
                         } catch (Exception ignored) {
                             finalCustomNameText = itemName;
