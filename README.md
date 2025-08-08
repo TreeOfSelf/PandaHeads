@@ -14,6 +14,9 @@ This doesn't offer any customizations at the moment.
 
 ![What the head drops look like](https://cdn.modrinth.com/data/cached_images/fccaa7431e51561549c56c26a86cc8d8f7e2ea1c.png)
 
+## Try it out
+`hardcoreanarchy.gay`   (Deathban Anarchy)  
+
 ## Support
 
 [Support discord here!]( https://discord.gg/3tP3Tqu983)
