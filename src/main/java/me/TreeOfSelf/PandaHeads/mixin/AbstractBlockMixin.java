@@ -112,7 +112,8 @@ public class AbstractBlockMixin {
                             profileComponent = newProfile;
 
                             DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), componentMap.get(DataComponentTypes.ITEM_NAME));
-                            String nameString = json.getOrThrow().getAsString();
+                            JsonElement jsonElement = json.getOrThrow();
+                            String nameString = jsonElement.isJsonPrimitive() ? jsonElement.getAsString() : jsonElement.toString();
 
                             int index = nameString.indexOf('§');
                             char nameColor = nameString.charAt(index + 1);
