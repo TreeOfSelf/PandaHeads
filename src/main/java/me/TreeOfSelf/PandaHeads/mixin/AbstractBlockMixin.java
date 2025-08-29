@@ -109,26 +109,32 @@ public class AbstractBlockMixin {
             if (!brokenHead) {
                 if (componentMap.contains(DataComponentTypes.ITEM_NAME)) headStack.set(DataComponentTypes.ITEM_NAME, componentMap.get(DataComponentTypes.ITEM_NAME));
 
-                //Update skin and name
+                //Update skin and name (with fallback to original data if API fails)
                 if(profileComponent.uuid().isPresent() && componentMap.contains(DataComponentTypes.ITEM_NAME)) {
                     if (silkLevel < 1) {
-                        @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.uuid().get());
-                        if (skinValues != null) {
-                            ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, skinValues[2]));
-                            newProfile.properties().clear();
-                            newProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
-                            profileComponent = newProfile;
+                        try {
+                            @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.uuid().get());
+                            if (skinValues != null) {
+                                ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, skinValues[2]));
+                                newProfile.properties().clear();
+                                newProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
+                                profileComponent = newProfile;
 
-                            DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), componentMap.get(DataComponentTypes.ITEM_NAME));
-                            JsonElement jsonElement = json.getOrThrow();
-                            String nameString = jsonElement.isJsonPrimitive() ? jsonElement.getAsString() : jsonElement.toString();
+                                DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), componentMap.get(DataComponentTypes.ITEM_NAME));
+                                JsonElement jsonElement = json.getOrThrow();
+                                String nameString = jsonElement.isJsonPrimitive() ? jsonElement.getAsString() : jsonElement.toString();
 
-                            int index = nameString.indexOf('§');
-                            if (index >= 0 && index < nameString.length() - 1) {
-                                char nameColor = nameString.charAt(index + 1);
-                                Text nameText = Text.of("§" + nameColor + "§l" + skinValues[2] + "'s §f§lHead");
-                                headStack.set(DataComponentTypes.ITEM_NAME, nameText);
+                                int index = nameString.indexOf('§');
+                                if (index >= 0 && index < nameString.length() - 1) {
+                                    char nameColor = nameString.charAt(index + 1);
+                                    Text nameText = Text.of("§" + nameColor + "§l" + skinValues[2] + "'s §f§lHead");
+                                    headStack.set(DataComponentTypes.ITEM_NAME, nameText);
+                                }
                             }
+                            // If skinValues is null (API failed), profileComponent keeps original data
+                        } catch (Exception e) {
+                            // If any exception occurs during skin update, keep original profile data
+                            // profileComponent already contains original data from line 83
                         }
                     }
                 }
