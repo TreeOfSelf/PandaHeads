@@ -48,7 +48,9 @@ public class HeadPlacer {
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, itemStack.get(DataComponentTypes.PROFILE));
             }
 
-            newBlockEntityComponents.add(DataComponentTypes.LORE, itemStack.get(DataComponentTypes.LORE));
+            if (itemStack.contains(DataComponentTypes.LORE)) {
+                newBlockEntityComponents.add(DataComponentTypes.LORE, itemStack.get(DataComponentTypes.LORE));
+            }
 
 
             if (componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&

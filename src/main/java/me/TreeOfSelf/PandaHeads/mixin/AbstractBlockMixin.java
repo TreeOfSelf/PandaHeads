@@ -46,6 +46,14 @@ public class AbstractBlockMixin {
     @Unique
     private static final Style UNKNOWN_STYLE_LORE  = Style.EMPTY.withColor(Formatting.GRAY).withItalic(true);
 
+    @Unique
+    private static String removeQuotes(String input) {
+        if (input != null && input.length() >= 2 && input.startsWith("\"") && input.endsWith("\"")) {
+            return input.substring(1, input.length() - 1);
+        }
+        return input;
+    }
+
     @Inject(at = @At("TAIL"), method = "getDroppedStacks", cancellable = true)
     private void getDroppedStacks(BlockState state, LootWorldContext.Builder builder, CallbackInfoReturnable<List<ItemStack>> cir) {
         if (state.getBlock() == Blocks.PLAYER_HEAD || state.getBlock() == Blocks.PLAYER_WALL_HEAD) {
@@ -116,10 +124,11 @@ public class AbstractBlockMixin {
                             String nameString = jsonElement.isJsonPrimitive() ? jsonElement.getAsString() : jsonElement.toString();
 
                             int index = nameString.indexOf('§');
-                            char nameColor = nameString.charAt(index + 1);
-                            Text nameText = Text.of("§" + nameColor + "§l" + skinValues[2] + "'s §f§lHead");
-                            headStack.set(DataComponentTypes.ITEM_NAME, nameText);
-
+                            if (index >= 0 && index < nameString.length() - 1) {
+                                char nameColor = nameString.charAt(index + 1);
+                                Text nameText = Text.of("§" + nameColor + "§l" + skinValues[2] + "'s §f§lHead");
+                                headStack.set(DataComponentTypes.ITEM_NAME, nameText);
+                            }
                         }
                     }
                 }
@@ -155,7 +164,7 @@ public class AbstractBlockMixin {
                     java.util.Optional<String> optionalCustomNameString = customData.getString("custom_name");
 
                     if (optionalCustomNameString.isPresent()) {
-                        String customNameString = optionalCustomNameString.get();
+                        String customNameString = removeQuotes(optionalCustomNameString.get());
                         if (!customNameString.isEmpty()) {
                             Text customNameText;
                             if (customNameString.startsWith("{")) {
@@ -175,10 +184,38 @@ public class AbstractBlockMixin {
                         }
                     }
                 }
+            } else if (componentMap.contains(DataComponentTypes.CUSTOM_NAME)) {
+                Text customName = componentMap.get(DataComponentTypes.CUSTOM_NAME);
+                if (customName != null && !customName.getString().isEmpty()) {
+                    String plainString = customName.getString();
+                    String cleanedString = removeQuotes(plainString);
+                    
+                    if (!cleanedString.equals(plainString)) {
+                        // Quotes were removed, need to recreate Text
+                        Text finalCustomNameText;
+                        if (cleanedString.startsWith("{")) {
+                            try {
+                                JsonElement jsonElement = JsonParser.parseString(cleanedString);
+                                DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
+                                finalCustomNameText = result.getOrThrow().getFirst();
+                            } catch (Exception ignored) {
+                                finalCustomNameText = Text.of(cleanedString);
+                            }
+                        } else {
+                            finalCustomNameText = Text.of(cleanedString);
+                        }
+                        headStack.set(DataComponentTypes.ITEM_NAME, finalCustomNameText);
+                        headStack.set(DataComponentTypes.CUSTOM_NAME, finalCustomNameText);
+                    } else {
+                        // No quotes to remove, preserve original Text with formatting
+                        headStack.set(DataComponentTypes.ITEM_NAME, customName);
+                        headStack.set(DataComponentTypes.CUSTOM_NAME, customName);
+                    }
+                }
             } else if (componentMap.contains(DataComponentTypes.ITEM_NAME)) {
                 Text itemName = componentMap.get(DataComponentTypes.ITEM_NAME);
                 if (itemName != null && !itemName.getString().isEmpty()) {
-                    String itemNameString = itemName.getString();
+                    String itemNameString = removeQuotes(itemName.getString());
                     Text finalCustomNameText;
                     if (itemNameString.startsWith("{")) {
                         try {
@@ -186,10 +223,10 @@ public class AbstractBlockMixin {
                             DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
                             finalCustomNameText = result.getOrThrow().getFirst();
                         } catch (Exception ignored) {
-                            finalCustomNameText = itemName;
+                            finalCustomNameText = Text.of(itemNameString);
                         }
                     } else {
-                        finalCustomNameText = itemName;
+                        finalCustomNameText = Text.of(itemNameString);
                     }
                     headStack.set(DataComponentTypes.ITEM_NAME, finalCustomNameText);
                     headStack.set(DataComponentTypes.CUSTOM_NAME, finalCustomNameText);
