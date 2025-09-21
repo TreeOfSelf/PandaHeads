@@ -176,6 +176,7 @@ public class PandaHeads implements ModInitializer {
 			}
 		}
 
+		serverPlayer.sendMessage(Text.of("-------------------------------").getWithStyle(Style.EMPTY.withColor(Formatting.WHITE)).getFirst(), false);
 		serverPlayer.sendMessage(nameText, false);
 		serverPlayer.sendMessage(deathReasonText, false);
 		if (aliveForText != null) {
