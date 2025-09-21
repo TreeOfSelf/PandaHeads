@@ -1,13 +1,14 @@
 {
-	"required": true,
-	"package": "me.TreeOfSelf.PandaHeads.mixin",
-	"compatibilityLevel": "JAVA_21",
-	"mixins": [
-      "AbstractBlockMixin",
-      "BlockMixin",
-      "ServerPlayerEntityMixin"
-	],
-	"injectors": {
-		"defaultRequire": 1
+  "required": true,
+  "package": "me.TreeOfSelf.PandaHeads.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AbstractBlockMixin",
+    "AnvilScreenHandlerMixin",
+    "BlockMixin",
+    "ServerPlayerEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
 	}
 }
