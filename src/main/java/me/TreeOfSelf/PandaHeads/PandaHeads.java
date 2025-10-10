@@ -73,7 +73,7 @@ public class PandaHeads implements ModInitializer {
 	}
 
 	private ActionResult useBlock(PlayerEntity playerEntity, World world, Hand hand, BlockHitResult blockHitResult) {
-		if (world.isClient || !(playerEntity instanceof ServerPlayerEntity serverPlayer)) {
+		if (world.isClient() || !(playerEntity instanceof ServerPlayerEntity serverPlayer)) {
 			return ActionResult.PASS;
 		}
 
@@ -99,8 +99,8 @@ public class PandaHeads implements ModInitializer {
 		if (profileComponent == null) return ActionResult.PASS;
 
 		String playerName = "Unknown";
-		if (profileComponent.name().isPresent() && !profileComponent.name().get().isEmpty()) {
-			playerName = profileComponent.name().get();
+		if (!profileComponent.getGameProfile().name().isEmpty()) {
+			playerName = profileComponent.getGameProfile().name();
 		}
 
 		Text nameText = null;

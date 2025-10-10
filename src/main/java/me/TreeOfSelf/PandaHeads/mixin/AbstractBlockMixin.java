@@ -70,10 +70,10 @@ public class AbstractBlockMixin {
             if (!componentMap.contains(DataComponentTypes.PROFILE)) {
                 componentMap = blockEntity.createComponentMap();
             } else {
-                if (blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).properties().containsKey("textures")){
-                Property property = blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).properties().get("textures").iterator().next();
-                componentMap.get(DataComponentTypes.PROFILE).properties().clear();
-                componentMap.get(DataComponentTypes.PROFILE).properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                if (blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).getGameProfile().properties().containsKey("textures")){
+                Property property = blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).getGameProfile().properties().get("textures").iterator().next();
+                componentMap.get(DataComponentTypes.PROFILE).getGameProfile().properties().clear();
+                componentMap.get(DataComponentTypes.PROFILE).getGameProfile().properties().put("textures", new Property(property.name(), property.value(), property.signature()));
                 }
             }
 
@@ -84,7 +84,7 @@ public class AbstractBlockMixin {
             boolean brokenHead = false;
 
             //Try and fix broken names
-            if (profileComponent.name().get().isEmpty() || profileComponent.name().get().isBlank()) {
+            if (profileComponent.getGameProfile().name().isEmpty() || profileComponent.getGameProfile().name().isBlank()) {
 
                 String name = SkinUtils.getNameFromComponentMap(componentMap);
                 if(name == null){
@@ -93,11 +93,11 @@ public class AbstractBlockMixin {
                     brokenHead = true;
                 }
 
-                ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, name));
-                if (profileComponent.properties().containsKey("textures")) {
-                    newProfile.properties().clear();
-                    Property property = profileComponent.properties().get("textures").iterator().next();
-                    newProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                ProfileComponent newProfile = ProfileComponent.ofStatic(new GameProfile(uuid,name));
+                if (profileComponent.getGameProfile().properties().containsKey("textures")) {
+                    newProfile.getGameProfile().properties().clear();
+                    Property property = profileComponent.getGameProfile().properties().get("textures").iterator().next();
+                    newProfile.getGameProfile().properties().put("textures", new Property(property.name(), property.value(), property.signature()));
                 }
 
                 profileComponent = newProfile;
@@ -110,14 +110,14 @@ public class AbstractBlockMixin {
                 if (componentMap.contains(DataComponentTypes.ITEM_NAME)) headStack.set(DataComponentTypes.ITEM_NAME, componentMap.get(DataComponentTypes.ITEM_NAME));
 
                 //Update skin and name (with fallback to original data if API fails)
-                if(profileComponent.uuid().isPresent() && componentMap.contains(DataComponentTypes.ITEM_NAME)) {
+                if(componentMap.contains(DataComponentTypes.ITEM_NAME)) {
                     if (silkLevel < 1) {
                         try {
-                            @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.uuid().get());
+                            @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.getGameProfile().id());
                             if (skinValues != null) {
-                                ProfileComponent newProfile = new ProfileComponent(new GameProfile(uuid, skinValues[2]));
-                                newProfile.properties().clear();
-                                newProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
+                                ProfileComponent newProfile = ProfileComponent.ofStatic(new GameProfile(uuid,skinValues[2]));
+                                newProfile.getGameProfile().properties().clear();
+                                newProfile.getGameProfile().properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
                                 profileComponent = newProfile;
 
                                 DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), componentMap.get(DataComponentTypes.ITEM_NAME));

@@ -37,7 +37,7 @@ import java.util.List;
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin {
 
-	@Shadow public abstract ServerWorld getWorld();
+	@Shadow public abstract ServerWorld getEntityWorld();
 
 	private static final Style DEATH_TIME = Style.EMPTY.withColor(Formatting.WHITE).withItalic(false);
 	private static final Style DEATH_REASON_STYLE = Style.EMPTY.withColor(Formatting.RED).withItalic(true).withItalic(false);
@@ -143,16 +143,16 @@ public abstract class ServerPlayerEntityMixin {
 		Text nameText = Text.of("§"+nameColor+"§l" +serverPlayerEntity.getName().getString()+"'s §f§lHead");
 
 
-		ItemStack player_skull = ItemStack.CODEC.parse(this.getWorld().getRegistryManager().getOps(NbtOps.INSTANCE), tag)
+		ItemStack player_skull = ItemStack.CODEC.parse(this.getEntityWorld().getRegistryManager().getOps(NbtOps.INSTANCE), tag)
 				.getOrThrow(error -> new RuntimeException("Failed to parse ItemStack: " + error));
 
 		player_skull.set(DataComponentTypes.ITEM_NAME,nameText);
 		player_skull.set(DataComponentTypes.CUSTOM_NAME,nameText);
 		player_skull.set(DataComponentTypes.LORE, new LoreComponent(loreList));
-		player_skull.set(DataComponentTypes.PROFILE, new ProfileComponent(serverPlayerEntity.getGameProfile()));
+		player_skull.set(DataComponentTypes.PROFILE, ProfileComponent.ofStatic(serverPlayerEntity.getGameProfile()));
 		if (sound != null) player_skull.set(DataComponentTypes.NOTE_BLOCK_SOUND, sound);
 		if (serverPlayerEntity.getInventory().getEmptySlot() == -1) {
-			serverPlayerEntity.dropStack(serverPlayerEntity.getWorld(),player_skull);
+			serverPlayerEntity.dropStack(serverPlayerEntity.getEntityWorld(),player_skull);
 		} else {
 			serverPlayerEntity.getInventory().insertStack(player_skull);
 		}

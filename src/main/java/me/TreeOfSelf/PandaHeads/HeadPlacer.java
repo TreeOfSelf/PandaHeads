@@ -36,11 +36,14 @@ public class HeadPlacer {
 
 
             if (name != null) {
-                ProfileComponent profileComponent = new ProfileComponent(new GameProfile(uuid, name));
-                if (itemStack.get(DataComponentTypes.PROFILE).properties().containsKey("textures")) {
-                    Property property = itemStack.get(DataComponentTypes.PROFILE).properties().get("textures").iterator().next();
-                    profileComponent.properties().clear();
-                    profileComponent.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+
+                ProfileComponent profileComponent = ProfileComponent.ofStatic(new GameProfile(uuid,name));
+
+
+                if (itemStack.get(DataComponentTypes.PROFILE).getGameProfile().properties().containsKey("textures")) {
+                    Property property = itemStack.get(DataComponentTypes.PROFILE).getGameProfile().properties().get("textures").iterator().next();
+                    profileComponent.getGameProfile().properties().clear();
+                    profileComponent.getGameProfile().properties().put("textures", new Property(property.name(), property.value(), property.signature()));
                 }
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, profileComponent);
 
@@ -54,8 +57,8 @@ public class HeadPlacer {
 
 
             if (componentMap.contains(DataComponentTypes.CUSTOM_DATA) &&
-                    ((componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("PublicBukkitValues") &&
-                            componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").get().contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).contains("HeadDrops_Owner"))) {
+                    ((componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().contains("PublicBukkitValues") &&
+                            componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().getCompound("PublicBukkitValues").get().contains("head-drop:headdrop-user")) || componentMap.get(DataComponentTypes.CUSTOM_DATA).copyNbt().contains("HeadDrops_Owner"))) {
 
                 @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(uuid);
 
