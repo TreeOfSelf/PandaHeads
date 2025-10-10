@@ -36,17 +36,13 @@ public class HeadPlacer {
 
 
             if (name != null) {
-
-                ProfileComponent profileComponent = ProfileComponent.ofStatic(new GameProfile(uuid,name));
-
-
+                GameProfile newProfile = new GameProfile(uuid, name);
                 if (itemStack.get(DataComponentTypes.PROFILE).getGameProfile().properties().containsKey("textures")) {
                     Property property = itemStack.get(DataComponentTypes.PROFILE).getGameProfile().properties().get("textures").iterator().next();
-                    profileComponent.getGameProfile().properties().clear();
-                    profileComponent.getGameProfile().properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                    newProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
                 }
+                ProfileComponent profileComponent = ProfileComponent.ofStatic(newProfile);
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, profileComponent);
-
             } else {
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, itemStack.get(DataComponentTypes.PROFILE));
             }

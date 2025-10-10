@@ -71,9 +71,16 @@ public class AbstractBlockMixin {
                 componentMap = blockEntity.createComponentMap();
             } else {
                 if (blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).getGameProfile().properties().containsKey("textures")){
-                Property property = blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).getGameProfile().properties().get("textures").iterator().next();
-                componentMap.get(DataComponentTypes.PROFILE).getGameProfile().properties().clear();
-                componentMap.get(DataComponentTypes.PROFILE).getGameProfile().properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                    Property property = blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).getGameProfile().properties().get("textures").iterator().next();
+                    GameProfile newProfile = new GameProfile(
+                            componentMap.get(DataComponentTypes.PROFILE).getGameProfile().id(),
+                            componentMap.get(DataComponentTypes.PROFILE).getGameProfile().name()
+                    );
+                    newProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                    componentMap = ComponentMap.builder()
+                            .addAll(componentMap)
+                            .add(DataComponentTypes.PROFILE, ProfileComponent.ofStatic(newProfile))
+                            .build();
                 }
             }
 
@@ -93,14 +100,13 @@ public class AbstractBlockMixin {
                     brokenHead = true;
                 }
 
-                ProfileComponent newProfile = ProfileComponent.ofStatic(new GameProfile(uuid,name));
+                GameProfile newGameProfile = new GameProfile(uuid, name);
                 if (profileComponent.getGameProfile().properties().containsKey("textures")) {
-                    newProfile.getGameProfile().properties().clear();
                     Property property = profileComponent.getGameProfile().properties().get("textures").iterator().next();
-                    newProfile.getGameProfile().properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                    newGameProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
                 }
 
-                profileComponent = newProfile;
+                profileComponent = ProfileComponent.ofStatic(newGameProfile);
             }
 
 
@@ -115,10 +121,9 @@ public class AbstractBlockMixin {
                         try {
                             @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.getGameProfile().id());
                             if (skinValues != null) {
-                                ProfileComponent newProfile = ProfileComponent.ofStatic(new GameProfile(uuid,skinValues[2]));
-                                newProfile.getGameProfile().properties().clear();
-                                newProfile.getGameProfile().properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
-                                profileComponent = newProfile;
+                                GameProfile newGameProfile = new GameProfile(uuid, skinValues[2]);
+                                newGameProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
+                                profileComponent = ProfileComponent.ofStatic(newGameProfile);
 
                                 DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), componentMap.get(DataComponentTypes.ITEM_NAME));
                                 JsonElement jsonElement = json.getOrThrow();
@@ -158,7 +163,7 @@ public class AbstractBlockMixin {
                 }
                 headStack.set(DataComponentTypes.LORE, new LoreComponent(newLoreLines));
             }
-            
+
             //If missing lore
             if (!componentMap.contains(DataComponentTypes.LORE) || (componentMap.get(DataComponentTypes.LORE).lines().isEmpty())){
                 headStack.set(DataComponentTypes.LORE, LoreComponent.DEFAULT.with(Text.of("This head's origin has been lost to time").getWithStyle(UNKNOWN_STYLE_LORE).getFirst()));
@@ -184,7 +189,7 @@ public class AbstractBlockMixin {
                             } else {
                                 customNameText = Text.of(customNameString);
                             }
-                                                     
+
                             headStack.set(DataComponentTypes.ITEM_NAME, customNameText);
                             headStack.set(DataComponentTypes.CUSTOM_NAME, customNameText);
                         }
@@ -195,7 +200,7 @@ public class AbstractBlockMixin {
                 if (customName != null && !customName.getString().isEmpty()) {
                     String plainString = customName.getString();
                     String cleanedString = removeQuotes(plainString);
-                    
+
                     if (!cleanedString.equals(plainString)) {
                         // Quotes were removed, need to recreate Text
                         Text finalCustomNameText;
