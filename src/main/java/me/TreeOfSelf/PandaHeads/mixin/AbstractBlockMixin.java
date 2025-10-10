@@ -1,9 +1,11 @@
 package me.TreeOfSelf.PandaHeads.mixin;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
@@ -72,11 +74,14 @@ public class AbstractBlockMixin {
             } else {
                 if (blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).getGameProfile().properties().containsKey("textures")){
                     Property property = blockEntity.createComponentMap().get(DataComponentTypes.PROFILE).getGameProfile().properties().get("textures").iterator().next();
+                    ImmutableMultimap.Builder<String, Property> propBuilder = ImmutableMultimap.builder();
+                    propBuilder.put("textures", new Property(property.name(), property.value(), property.signature()));
+                    PropertyMap propertyMap = new PropertyMap(propBuilder.build());
                     GameProfile newProfile = new GameProfile(
                             componentMap.get(DataComponentTypes.PROFILE).getGameProfile().id(),
-                            componentMap.get(DataComponentTypes.PROFILE).getGameProfile().name()
+                            componentMap.get(DataComponentTypes.PROFILE).getGameProfile().name(),
+                            propertyMap
                     );
-                    newProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
                     componentMap = ComponentMap.builder()
                             .addAll(componentMap)
                             .add(DataComponentTypes.PROFILE, ProfileComponent.ofStatic(newProfile))
@@ -100,12 +105,14 @@ public class AbstractBlockMixin {
                     brokenHead = true;
                 }
 
-                GameProfile newGameProfile = new GameProfile(uuid, name);
+                ImmutableMultimap.Builder<String, Property> propBuilder = ImmutableMultimap.builder();
                 if (profileComponent.getGameProfile().properties().containsKey("textures")) {
                     Property property = profileComponent.getGameProfile().properties().get("textures").iterator().next();
-                    newGameProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                    propBuilder.put("textures", new Property(property.name(), property.value(), property.signature()));
                 }
+                PropertyMap propertyMap = new PropertyMap(propBuilder.build());
 
+                GameProfile newGameProfile = new GameProfile(uuid, name, propertyMap);
                 profileComponent = ProfileComponent.ofStatic(newGameProfile);
             }
 
@@ -121,11 +128,13 @@ public class AbstractBlockMixin {
                         try {
                             @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.getGameProfile().id());
                             if (skinValues != null) {
-                                GameProfile newGameProfile = new GameProfile(uuid, skinValues[2]);
-                                newGameProfile.properties().put("textures", new Property("textures", skinValues[0], skinValues[1]));
+                                ImmutableMultimap.Builder<String, Property> propBuilder = ImmutableMultimap.builder();
+                                propBuilder.put("textures", new Property("textures", skinValues[0], skinValues[1]));
+                                PropertyMap propertyMap = new PropertyMap(propBuilder.build());
+                                GameProfile newGameProfile = new GameProfile(uuid, skinValues[2], propertyMap);
                                 profileComponent = ProfileComponent.ofStatic(newGameProfile);
 
-                                DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), componentMap.get(DataComponentTypes.ITEM_NAME));
+                                DataResult<JsonElement> json = TextCodecs.CODEC.encodeStart(world.getRegistryManager().getOps(JsonOps.INSTANCE), componentMap.get(DataComponentTypes.ITEM_NAME));
                                 JsonElement jsonElement = json.getOrThrow();
                                 String nameString = jsonElement.isJsonPrimitive() ? jsonElement.getAsString() : jsonElement.toString();
 
@@ -154,7 +163,7 @@ public class AbstractBlockMixin {
                     if (line.getString().startsWith("{")) {
                         try {
                             JsonElement jsonElement = JsonParser.parseString(line.getString());
-                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
+                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(world.getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
                             newLine = result.getOrThrow().getFirst();
                         } catch (Exception ignored) {
                         }
@@ -181,7 +190,7 @@ public class AbstractBlockMixin {
                             if (customNameString.startsWith("{")) {
                                 try {
                                     JsonElement jsonElement = JsonParser.parseString(customNameString);
-                                    DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
+                                    DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(world.getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
                                     customNameText = result.getOrThrow().getFirst();
                                 } catch (Exception ignored) {
                                     customNameText = Text.of(customNameString);
@@ -207,7 +216,7 @@ public class AbstractBlockMixin {
                         if (cleanedString.startsWith("{")) {
                             try {
                                 JsonElement jsonElement = JsonParser.parseString(cleanedString);
-                                DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
+                                DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(world.getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
                                 finalCustomNameText = result.getOrThrow().getFirst();
                             } catch (Exception ignored) {
                                 finalCustomNameText = Text.of(cleanedString);
@@ -231,7 +240,7 @@ public class AbstractBlockMixin {
                     if (itemNameString.startsWith("{")) {
                         try {
                             JsonElement jsonElement = JsonParser.parseString(itemNameString);
-                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(builder.getWorld().getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
+                            DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(world.getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
                             finalCustomNameText = result.getOrThrow().getFirst();
                         } catch (Exception ignored) {
                             finalCustomNameText = Text.of(itemNameString);

@@ -1,17 +1,16 @@
 package me.TreeOfSelf.PandaHeads;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import com.mojang.authlib.properties.PropertyMap;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.component.ComponentMap;
 import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -36,11 +35,13 @@ public class HeadPlacer {
 
 
             if (name != null) {
-                GameProfile newProfile = new GameProfile(uuid, name);
+                ImmutableMultimap.Builder<String, Property> propBuilder = ImmutableMultimap.builder();
                 if (itemStack.get(DataComponentTypes.PROFILE).getGameProfile().properties().containsKey("textures")) {
                     Property property = itemStack.get(DataComponentTypes.PROFILE).getGameProfile().properties().get("textures").iterator().next();
-                    newProfile.properties().put("textures", new Property(property.name(), property.value(), property.signature()));
+                    propBuilder.put("textures", new Property(property.name(), property.value(), property.signature()));
                 }
+                PropertyMap propertyMap = new PropertyMap(propBuilder.build());
+                GameProfile newProfile = new GameProfile(uuid, name, propertyMap);
                 ProfileComponent profileComponent = ProfileComponent.ofStatic(newProfile);
                 newBlockEntityComponents.add(DataComponentTypes.PROFILE, profileComponent);
             } else {
