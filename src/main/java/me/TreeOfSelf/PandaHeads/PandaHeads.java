@@ -7,42 +7,44 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.component.ComponentMap;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.LoreComponent;
-import net.minecraft.component.type.ProfileComponent;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextCodecs;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.item.component.ItemLore;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.world.phys.BlockHitResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.Objects;
+import java.util.UUID;
 
 public class PandaHeads implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("panda-heads");
-    private static final Style UNKNOWN_STYLE = Style.EMPTY.withColor(Formatting.GRAY).withBold(true);
-    private static final Style UNKNOWN_STYLE_LORE = Style.EMPTY.withColor(Formatting.GRAY).withItalic(true);
-    
+    private static final Style UNKNOWN_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY).withBold(true);
+    private static final Style UNKNOWN_STYLE_LORE = Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(true);
+
     private static class ClickKey {
-        private final java.util.UUID playerId;
+        private final UUID playerId;
         private final BlockPos blockPos;
-        
-        public ClickKey(java.util.UUID playerId, BlockPos blockPos) {
+
+        public ClickKey(UUID playerId, BlockPos blockPos) {
             this.playerId = playerId;
             this.blockPos = blockPos;
         }
-        
+
         @Override
         public boolean equals(Object obj) {
             if (this == obj) return true;
@@ -50,13 +52,13 @@ public class PandaHeads implements ModInitializer {
             ClickKey clickKey = (ClickKey) obj;
             return Objects.equals(playerId, clickKey.playerId) && Objects.equals(blockPos, clickKey.blockPos);
         }
-        
+
         @Override
         public int hashCode() {
             return Objects.hash(playerId, blockPos);
         }
     }
-    
+
     private static final java.util.Map<ClickKey, Long> lastClickTime = new java.util.HashMap<>();
 
 	@Override
@@ -72,42 +74,42 @@ public class PandaHeads implements ModInitializer {
 		return input;
 	}
 
-	private ActionResult useBlock(PlayerEntity playerEntity, World world, Hand hand, BlockHitResult blockHitResult) {
-		if (world.isClient() || !(playerEntity instanceof ServerPlayerEntity serverPlayer)) {
-			return ActionResult.PASS;
+	private InteractionResult useBlock(Player player, Level level, InteractionHand hand, BlockHitResult blockHitResult) {
+		if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
+			return InteractionResult.PASS;
 		}
 
 		long currentTime = System.currentTimeMillis();
-		ClickKey clickKey = new ClickKey(serverPlayer.getUuid(), blockHitResult.getBlockPos());
+		ClickKey clickKey = new ClickKey(serverPlayer.getUUID(), blockHitResult.getBlockPos());
 		if (lastClickTime.containsKey(clickKey) && currentTime - lastClickTime.get(clickKey) < 1000) {
-			return ActionResult.PASS;
+			return InteractionResult.PASS;
 		}
 		lastClickTime.put(clickKey, currentTime);
 
-		BlockState state = world.getBlockState(blockHitResult.getBlockPos());
-		if (state.getBlock() != Blocks.PLAYER_HEAD && state.getBlock() != Blocks.PLAYER_WALL_HEAD) {
-			return ActionResult.PASS;
+		var state = level.getBlockState(blockHitResult.getBlockPos());
+		if (!state.is(Blocks.PLAYER_HEAD) && !state.is(Blocks.PLAYER_WALL_HEAD)) {
+			return InteractionResult.PASS;
 		}
 
-		BlockEntity blockEntity = world.getBlockEntity(blockHitResult.getBlockPos());
-		if (blockEntity == null) return ActionResult.PASS;
+		BlockEntity blockEntity = level.getBlockEntity(blockHitResult.getBlockPos());
+		if (blockEntity == null) return InteractionResult.PASS;
 
-		ComponentMap componentMap = blockEntity.getComponents();
-		if (!componentMap.contains(DataComponentTypes.PROFILE)) return ActionResult.PASS;
+		DataComponentMap componentMap = blockEntity.components();
+		if (!componentMap.has(DataComponents.PROFILE)) return InteractionResult.PASS;
 
-		ProfileComponent profileComponent = componentMap.get(DataComponentTypes.PROFILE);
-		if (profileComponent == null) return ActionResult.PASS;
+		ResolvableProfile profile = componentMap.get(DataComponents.PROFILE);
+		if (profile == null) return InteractionResult.PASS;
 
 		String playerName = "Unknown";
-		if (!profileComponent.getGameProfile().name().isEmpty()) {
-			playerName = profileComponent.getGameProfile().name();
+		if (!profile.partialProfile().name().isEmpty()) {
+			playerName = profile.partialProfile().name();
 		}
 
-		Text nameText = null;
-		if (componentMap.contains(DataComponentTypes.ITEM_NAME)) {
-			nameText = componentMap.get(DataComponentTypes.ITEM_NAME);
-		} else if (componentMap.contains(DataComponentTypes.CUSTOM_NAME)) {
-			nameText = componentMap.get(DataComponentTypes.CUSTOM_NAME);
+		Component nameText = null;
+		if (componentMap.has(DataComponents.ITEM_NAME)) {
+			nameText = componentMap.get(DataComponents.ITEM_NAME);
+		} else if (componentMap.has(DataComponents.CUSTOM_NAME)) {
+			nameText = componentMap.get(DataComponents.CUSTOM_NAME);
 		}
 
 		if (nameText != null) {
@@ -116,39 +118,41 @@ public class PandaHeads implements ModInitializer {
 			if (nameString.startsWith("{")) {
 				try {
 					JsonElement jsonElement = JsonParser.parseString(nameString);
-					DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(world.getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
+					var ops = RegistryOps.create(JsonOps.INSTANCE, level.registryAccess());
+					DataResult<Pair<Component, JsonElement>> result = ComponentSerialization.CODEC.decode(ops, jsonElement);
 					nameText = result.getOrThrow().getFirst();
 				} catch (Exception ignored) {
-					nameText = Text.of(nameString);
+					nameText = Component.literal(nameString);
 				}
 			} else {
-				nameText = Text.of(nameString);
+				nameText = Component.literal(nameString);
 			}
 		} else {
-			nameText = Text.of(playerName + "'s Head").getWithStyle(UNKNOWN_STYLE).getFirst();
+			nameText = Component.literal(playerName + "'s Head").copy().withStyle(UNKNOWN_STYLE);
 		}
 
-		Text deathReasonText = Text.of("This head's origin has been lost to time").getWithStyle(UNKNOWN_STYLE_LORE).getFirst();
-		Text aliveForText = null;
-		Text dateText = null;
+		Component deathReasonText = Component.literal("This head's origin has been lost to time").copy().withStyle(UNKNOWN_STYLE_LORE);
+		Component aliveForText = null;
+		Component dateText = null;
 
-		if (componentMap.contains(DataComponentTypes.LORE)) {
-			LoreComponent lore = componentMap.get(DataComponentTypes.LORE);
-			if (!lore.lines().isEmpty()) {
-				for (Text line : lore.lines()) {
-					Text processedLine = line;
+		if (componentMap.has(DataComponents.LORE)) {
+			ItemLore lore = componentMap.get(DataComponents.LORE);
+			if (lore != null && !lore.lines().isEmpty()) {
+				for (Component line : lore.lines()) {
+					Component processedLine = line;
 					String lineText = line.getString();
-					
+
 					if (lineText.startsWith("{")) {
 						try {
 							JsonElement jsonElement = JsonParser.parseString(lineText);
-							DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(world.getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
+							var ops = RegistryOps.create(JsonOps.INSTANCE, level.registryAccess());
+							DataResult<Pair<Component, JsonElement>> result = ComponentSerialization.CODEC.decode(ops, jsonElement);
 							processedLine = result.getOrThrow().getFirst();
 							lineText = processedLine.getString();
 						} catch (Exception ignored) {
 						}
 					}
-					
+
 					if (lineText.toLowerCase().contains("killed") || lineText.toLowerCase().contains("died") || lineText.toLowerCase().contains("death")) {
 						deathReasonText = processedLine;
 					} else if (lineText.toLowerCase().contains("alive") || lineText.toLowerCase().contains("lived")) {
@@ -157,14 +161,15 @@ public class PandaHeads implements ModInitializer {
 						dateText = processedLine;
 					}
 				}
-				
+
 				if (deathReasonText.getString().equals("This head's origin has been lost to time") && !lore.lines().isEmpty()) {
-					Text firstLine = lore.lines().get(0);
+					Component firstLine = lore.lines().get(0);
 					String firstLineText = firstLine.getString();
 					if (firstLineText.startsWith("{")) {
 						try {
 							JsonElement jsonElement = JsonParser.parseString(firstLineText);
-							DataResult<Pair<Text, JsonElement>> result = TextCodecs.CODEC.decode(world.getRegistryManager().getOps(JsonOps.INSTANCE), jsonElement);
+							var ops = RegistryOps.create(JsonOps.INSTANCE, level.registryAccess());
+							DataResult<Pair<Component, JsonElement>> result = ComponentSerialization.CODEC.decode(ops, jsonElement);
 							deathReasonText = result.getOrThrow().getFirst();
 						} catch (Exception ignored) {
 							deathReasonText = firstLine;
@@ -176,17 +181,17 @@ public class PandaHeads implements ModInitializer {
 			}
 		}
 
-		serverPlayer.sendMessage(Text.of("-------------------------------").getWithStyle(Style.EMPTY.withColor(Formatting.WHITE)).getFirst(), false);
-		serverPlayer.sendMessage(nameText, false);
-		serverPlayer.sendMessage(deathReasonText, false);
+		serverPlayer.sendSystemMessage(Component.literal("-------------------------------").copy().withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE)), false);
+		serverPlayer.sendSystemMessage(nameText, false);
+		serverPlayer.sendSystemMessage(deathReasonText, false);
 		if (aliveForText != null) {
-			serverPlayer.sendMessage(aliveForText, false);
+			serverPlayer.sendSystemMessage(aliveForText, false);
 		}
 		if (dateText != null) {
-			serverPlayer.sendMessage(dateText, false);
+			serverPlayer.sendSystemMessage(dateText, false);
 		}
 
-		return ActionResult.SUCCESS;
+		return InteractionResult.SUCCESS;
 	}
 
 }
