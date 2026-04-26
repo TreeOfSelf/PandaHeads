@@ -24,6 +24,15 @@ public class HeadPlacer {
         if (itemStack.is(Items.PLAYER_HEAD)) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
 
+            if (blockEntity != null && blockEntity.getType() != BlockEntityType.SKULL) {
+                level.removeBlockEntity(pos);
+                BlockEntity fresh = BlockEntityType.SKULL.create(pos, level.getBlockState(pos));
+                if (fresh != null) {
+                    level.setBlockEntity(fresh);
+                }
+                blockEntity = level.getBlockEntity(pos);
+            }
+
             if (blockEntity == null || blockEntity.getType() != BlockEntityType.SKULL) return;
 
             DataComponentMap componentMap = itemStack.getComponents();
