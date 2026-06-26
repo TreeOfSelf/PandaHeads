@@ -15,6 +15,7 @@ import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityTypes;
 import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
@@ -24,16 +25,16 @@ public class HeadPlacer {
         if (itemStack.is(Items.PLAYER_HEAD)) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
 
-            if (blockEntity != null && blockEntity.getType() != BlockEntityType.SKULL) {
+            if (blockEntity != null && blockEntity.getType() != BlockEntityTypes.SKULL) {
                 level.removeBlockEntity(pos);
-                BlockEntity fresh = BlockEntityType.SKULL.create(pos, level.getBlockState(pos));
+                BlockEntity fresh = BlockEntityTypes.SKULL.create(pos, level.getBlockState(pos));
                 if (fresh != null) {
                     level.setBlockEntity(fresh);
                 }
                 blockEntity = level.getBlockEntity(pos);
             }
 
-            if (blockEntity == null || blockEntity.getType() != BlockEntityType.SKULL) return;
+            if (blockEntity == null || blockEntity.getType() != BlockEntityTypes.SKULL) return;
 
             DataComponentMap componentMap = itemStack.getComponents();
 
