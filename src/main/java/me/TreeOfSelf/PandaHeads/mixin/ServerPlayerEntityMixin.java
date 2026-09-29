@@ -136,7 +136,8 @@ public abstract class ServerPlayerEntityMixin {
 		player_skull.set(DataComponents.PROFILE, ResolvableProfile.createResolved(serverPlayerEntity.getGameProfile()));
 		if (sound != null) player_skull.set(DataComponents.NOTE_BLOCK_SOUND, sound);
 		if (serverPlayerEntity.getInventory().getFreeSlot() == -1) {
-			serverPlayerEntity.drop(player_skull, false, false);
+			var dropped = serverPlayerEntity.createItemStackToDrop(player_skull, false, false);
+			if (dropped != null) serverPlayerEntity.level().addFreshEntity(dropped);
 		} else {
 			serverPlayerEntity.getInventory().add(player_skull);
 		}
