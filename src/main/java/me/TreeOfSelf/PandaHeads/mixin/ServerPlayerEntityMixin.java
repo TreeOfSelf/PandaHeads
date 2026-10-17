@@ -1,5 +1,6 @@
 package me.TreeOfSelf.PandaHeads.mixin;
 
+import me.TreeOfSelf.PandaHeads.HardcoreHeartCompat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -120,6 +121,7 @@ public abstract class ServerPlayerEntityMixin {
 		}
 
 		List<Component> loreList = new ArrayList<>();
+		if (HardcoreHeartCompat.isFirstDeath(serverPlayerEntity.getUUID())) loreList.add(HardcoreHeartCompat.firstDeathLine());
 		loreList.add(serverPlayerEntity.getCombatTracker().getDeathMessage().copy().withStyle(DEATH_REASON_STYLE));
 		loreList.add(Component.literal("Alive for: " + formatSeconds(lastDeathTime)).copy().withStyle(DEATH_TIME));
 		loreList.add(Component.literal(formattedDate).copy().withStyle(DATE_STYLE));
