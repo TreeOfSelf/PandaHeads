@@ -134,6 +134,8 @@ public class PandaHeads implements ModInitializer {
 		Component deathReasonText = Component.literal("This head's origin has been lost to time").copy().withStyle(UNKNOWN_STYLE_LORE);
 		Component aliveForText = null;
 		Component dateText = null;
+		Component hardcoreText = null;
+		Component firstOtherLine = null;
 
 		if (componentMap.has(DataComponents.LORE)) {
 			ItemLore lore = componentMap.get(DataComponents.LORE);
@@ -153,6 +155,13 @@ public class PandaHeads implements ModInitializer {
 						}
 					}
 
+					// PandaHardcoreHeart line ("<heart> Hardcore Death"): shown on its own, never as the death reason
+					if (HardcoreHeartCompat.isHardcoreLine(lineText)) {
+						hardcoreText = processedLine;
+						continue;
+					}
+					if (firstOtherLine == null) firstOtherLine = processedLine;
+
 					if (lineText.toLowerCase().contains("killed") || lineText.toLowerCase().contains("died") || lineText.toLowerCase().contains("death")) {
 						deathReasonText = processedLine;
 					} else if (lineText.toLowerCase().contains("alive") || lineText.toLowerCase().contains("lived")) {
@@ -162,27 +171,17 @@ public class PandaHeads implements ModInitializer {
 					}
 				}
 
-				if (deathReasonText.getString().equals("This head's origin has been lost to time") && !lore.lines().isEmpty()) {
-					Component firstLine = lore.lines().get(0);
-					String firstLineText = firstLine.getString();
-					if (firstLineText.startsWith("{")) {
-						try {
-							JsonElement jsonElement = JsonParser.parseString(firstLineText);
-							var ops = RegistryOps.create(JsonOps.INSTANCE, level.registryAccess());
-							DataResult<Pair<Component, JsonElement>> result = ComponentSerialization.CODEC.decode(ops, jsonElement);
-							deathReasonText = result.getOrThrow().getFirst();
-						} catch (Exception ignored) {
-							deathReasonText = firstLine;
-						}
-					} else {
-						deathReasonText = firstLine;
-					}
+				if (deathReasonText.getString().equals("This head's origin has been lost to time") && firstOtherLine != null) {
+					deathReasonText = firstOtherLine;
 				}
 			}
 		}
 
 		serverPlayer.sendSystemMessage(Component.literal("-------------------------------").copy().withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE)), false);
 		serverPlayer.sendSystemMessage(nameText, false);
+		if (hardcoreText != null) {
+			serverPlayer.sendSystemMessage(hardcoreText, false);
+		}
 		serverPlayer.sendSystemMessage(deathReasonText, false);
 		if (aliveForText != null) {
 			serverPlayer.sendSystemMessage(aliveForText, false);

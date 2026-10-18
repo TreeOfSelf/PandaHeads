@@ -36,6 +36,11 @@ public final class HardcoreHeartCompat {
 		}
 	}
 
+	// The lore line firstDeathLine() makes (the heart's plain-text fallback is "❤")
+	public static boolean isHardcoreLine(String text) {
+		return text.endsWith(" Hardcore Death");
+	}
+
 	public static Component firstDeathLine() {
 		return Component.empty().withStyle(s -> s.withColor(ChatFormatting.DARK_RED).withBold(true).withItalic(false))
 			.append(Component.object(HEART, Component.literal("❤")))
