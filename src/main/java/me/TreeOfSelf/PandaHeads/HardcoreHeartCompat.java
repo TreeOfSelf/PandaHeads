@@ -39,6 +39,6 @@ public final class HardcoreHeartCompat {
 	public static Component firstDeathLine() {
 		return Component.empty().withStyle(s -> s.withColor(ChatFormatting.DARK_RED).withBold(true).withItalic(false))
 			.append(Component.object(HEART, Component.literal("❤")))
-			.append(" First Death");
+			.append(" Hardcore Death");
 	}
 }
