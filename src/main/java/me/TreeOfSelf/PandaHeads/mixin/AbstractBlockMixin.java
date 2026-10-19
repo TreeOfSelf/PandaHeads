@@ -103,10 +103,11 @@ public class AbstractBlockMixin {
             if (profileComponent == null) return;
             boolean brokenHead = false;
 
-            if (profileComponent.partialProfile().name().isEmpty() || profileComponent.partialProfile().name().isBlank()) {
-
-                String name = SkinUtils.getNameFromComponentMap(componentMap);
-                if (name == null) {
+            if (profileComponent.partialProfile().name().isBlank()) {
+                // Never wait on Mojang here: a lookup still in flight keeps the profile as it is
+                SkinUtils.Lookup lookup = SkinUtils.lookupSkin(uuid, null, null);
+                String name = lookup.ok() ? lookup.skin()[2] : null;
+                if (name == null && lookup.status() == SkinUtils.Status.FAILED) {
                     headStack.set(DataComponents.ITEM_NAME, Component.literal("Unknown Head").copy().withStyle(UNKNOWN_STYLE));
                     name = "Unknown";
                     brokenHead = true;
@@ -119,8 +120,10 @@ public class AbstractBlockMixin {
                 }
                 PropertyMap propertyMap = new PropertyMap(propBuilder.build());
 
-                GameProfile newGameProfile = new GameProfile(uuid, name, propertyMap);
-                profileComponent = ResolvableProfile.createResolved(newGameProfile);
+                if (name != null) {
+                    GameProfile newGameProfile = new GameProfile(uuid, name, propertyMap);
+                    profileComponent = ResolvableProfile.createResolved(newGameProfile);
+                }
             }
 
             if (!brokenHead) {
@@ -129,8 +132,9 @@ public class AbstractBlockMixin {
                 if (componentMap.has(DataComponents.ITEM_NAME)) {
                     if (silkLevel < 1) {
                         try {
-                            @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(profileComponent.partialProfile().id());
-                            if (skinValues != null) {
+                            SkinUtils.Lookup lookup = SkinUtils.lookupSkin(profileComponent.partialProfile().id(), null, null);
+                            @Nullable String[] skinValues = lookup.skin();
+                            if (lookup.ok()) {
                                 ImmutableMultimap.Builder<String, Property> propBuilder = ImmutableMultimap.builder();
                                 propBuilder.put("textures", new Property("textures", skinValues[0], skinValues[1]));
                                 PropertyMap propertyMap = new PropertyMap(propBuilder.build());
@@ -212,19 +216,8 @@ public class AbstractBlockMixin {
                     String cleanedString = removeQuotes(plainString);
 
                     if (!cleanedString.equals(plainString)) {
-                        Component finalCustomNameText;
-                        if (cleanedString.startsWith("{")) {
-                            try {
-                                JsonElement jsonElement = JsonParser.parseString(cleanedString);
-                                var ops = RegistryOps.create(JsonOps.INSTANCE, level.registryAccess());
-                                DataResult<Pair<Component, JsonElement>> result = ComponentSerialization.CODEC.decode(ops, jsonElement);
-                                finalCustomNameText = result.getOrThrow().getFirst();
-                            } catch (Exception ignored) {
-                                finalCustomNameText = Component.literal(cleanedString);
-                            }
-                        } else {
-                            finalCustomNameText = Component.literal(cleanedString);
-                        }
+                        // Anvil names are player text: never decode them as JSON
+                        Component finalCustomNameText = Component.literal(cleanedString);
                         headStack.set(DataComponents.ITEM_NAME, finalCustomNameText);
                         headStack.set(DataComponents.CUSTOM_NAME, finalCustomNameText);
                     } else {
@@ -235,20 +228,8 @@ public class AbstractBlockMixin {
             } else if (componentMap.has(DataComponents.ITEM_NAME)) {
                 Component itemName = componentMap.get(DataComponents.ITEM_NAME);
                 if (itemName != null && !itemName.getString().isEmpty()) {
-                    String itemNameString = removeQuotes(itemName.getString());
-                    Component finalCustomNameText;
-                    if (itemNameString.startsWith("{")) {
-                        try {
-                            JsonElement jsonElement = JsonParser.parseString(itemNameString);
-                            var ops = RegistryOps.create(JsonOps.INSTANCE, level.registryAccess());
-                            DataResult<Pair<Component, JsonElement>> result = ComponentSerialization.CODEC.decode(ops, jsonElement);
-                            finalCustomNameText = result.getOrThrow().getFirst();
-                        } catch (Exception ignored) {
-                            finalCustomNameText = Component.literal(itemNameString);
-                        }
-                    } else {
-                        finalCustomNameText = Component.literal(itemNameString);
-                    }
+                    // Can hold an old anvil name (drops copy it here), so never decode it as JSON
+                    Component finalCustomNameText = Component.literal(removeQuotes(itemName.getString()));
                     headStack.set(DataComponents.ITEM_NAME, finalCustomNameText);
                     headStack.set(DataComponents.CUSTOM_NAME, finalCustomNameText);
                 }

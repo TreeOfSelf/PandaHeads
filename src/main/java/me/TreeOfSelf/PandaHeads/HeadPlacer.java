@@ -41,11 +41,28 @@ public class HeadPlacer {
             if (!componentMap.has(DataComponents.PROFILE)) return;
 
             UUID uuid = SkinUtils.getUUIDFromComponentMap(componentMap);
-            String name = SkinUtils.getNameFromComponentMap(componentMap);
             DataComponentMap.Builder newBlockEntityComponents = DataComponentMap.builder();
 
             ResolvableProfile stackProfile = itemStack.get(DataComponents.PROFILE);
             if (stackProfile == null) return;
+
+            boolean headDrop = SkinUtils.isHeadDrop(componentMap);
+            String profileName = stackProfile.partialProfile().name();
+            SkinUtils.Lookup lookup = null;
+            if (headDrop || profileName.isBlank()) {
+                // Not cached yet: place it as it is now and fill the name in once Mojang answered
+                BlockEntity placed = blockEntity;
+                ItemStack placedStack = itemStack.copy();
+                lookup = SkinUtils.lookupSkin(uuid, level.getServer(), () -> {
+                    if (level.getBlockEntity(pos) == placed) place(level, pos, placedStack);
+                });
+            }
+            String name;
+            if (headDrop) {
+                name = lookup.ok() ? lookup.skin()[2] : null;
+            } else {
+                name = profileName.isBlank() ? (lookup.ok() ? lookup.skin()[2] : null) : profileName;
+            }
 
             if (name != null) {
                 ImmutableMultimap.Builder<String, Property> propBuilder = ImmutableMultimap.builder();
@@ -72,13 +89,8 @@ public class HeadPlacer {
                     && nbt.getCompound("PublicBukkitValues").map(c -> c.contains("head-drop:headdrop-user")).orElse(false);
                 boolean headDropsOwner = nbt.contains("HeadDrops_Owner");
                 if (bukkitHeadDrop || headDropsOwner) {
-                    @Nullable String[] skinValues = SkinUtils.fetchSkinByUUID(uuid);
-
-                    if (skinValues != null) {
-                        newBlockEntityComponents.set(DataComponents.ITEM_NAME, Component.literal("§f§l" + skinValues[2] + "'s §f§lHead"));
-                    } else {
-                        if (itemStack.has(DataComponents.CUSTOM_DATA) && itemStack.has(DataComponents.CUSTOM_NAME))
-                            newBlockEntityComponents.set(DataComponents.ITEM_NAME, itemStack.get(DataComponents.CUSTOM_NAME));
+                    if (lookup != null && lookup.ok()) {
+                        newBlockEntityComponents.set(DataComponents.ITEM_NAME, Component.literal("§f§l" + lookup.skin()[2] + "'s §f§lHead"));
                     }
                 } else if (itemStack.has(DataComponents.ITEM_NAME)) {
                     newBlockEntityComponents.set(DataComponents.ITEM_NAME, itemStack.get(DataComponents.ITEM_NAME));

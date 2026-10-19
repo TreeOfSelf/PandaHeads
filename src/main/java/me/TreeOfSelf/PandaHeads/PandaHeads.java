@@ -79,17 +79,19 @@ public class PandaHeads implements ModInitializer {
 			return InteractionResult.PASS;
 		}
 
+		var state = level.getBlockState(blockHitResult.getBlockPos());
+		if (!state.is(Blocks.PLAYER_HEAD) && !state.is(Blocks.PLAYER_WALL_HEAD)) {
+			return InteractionResult.PASS;
+		}
+
 		long currentTime = System.currentTimeMillis();
 		ClickKey clickKey = new ClickKey(serverPlayer.getUUID(), blockHitResult.getBlockPos());
 		if (lastClickTime.containsKey(clickKey) && currentTime - lastClickTime.get(clickKey) < 1000) {
 			return InteractionResult.PASS;
 		}
+		// Only the last second matters; without this every head click stayed in the map until restart
+		if (lastClickTime.size() > 256) lastClickTime.values().removeIf(t -> currentTime - t >= 1000);
 		lastClickTime.put(clickKey, currentTime);
-
-		var state = level.getBlockState(blockHitResult.getBlockPos());
-		if (!state.is(Blocks.PLAYER_HEAD) && !state.is(Blocks.PLAYER_WALL_HEAD)) {
-			return InteractionResult.PASS;
-		}
 
 		BlockEntity blockEntity = level.getBlockEntity(blockHitResult.getBlockPos());
 		if (blockEntity == null) return InteractionResult.PASS;
@@ -115,18 +117,8 @@ public class PandaHeads implements ModInitializer {
 		if (nameText != null) {
 			String nameString = nameText.getString();
 			nameString = removeQuotes(nameString);
-			if (nameString.startsWith("{")) {
-				try {
-					JsonElement jsonElement = JsonParser.parseString(nameString);
-					var ops = RegistryOps.create(JsonOps.INSTANCE, level.registryAccess());
-					DataResult<Pair<Component, JsonElement>> result = ComponentSerialization.CODEC.decode(ops, jsonElement);
-					nameText = result.getOrThrow().getFirst();
-				} catch (Exception ignored) {
-					nameText = Component.literal(nameString);
-				}
-			} else {
-				nameText = Component.literal(nameString);
-			}
+			// Player text (anvil names end up in both components): never decode it as JSON
+			nameText = Component.literal(nameString);
 		} else {
 			nameText = Component.literal(playerName + "'s Head").copy().withStyle(UNKNOWN_STYLE);
 		}
@@ -166,7 +158,8 @@ public class PandaHeads implements ModInitializer {
 						deathReasonText = processedLine;
 					} else if (lineText.toLowerCase().contains("alive") || lineText.toLowerCase().contains("lived")) {
 						aliveForText = processedLine;
-					} else if (lineText.matches(".*\\d{4}.*") || lineText.toLowerCase().contains("date")) {
+					} else if (dateText == null && (lineText.matches(".*\\d{4}.*") || lineText.toLowerCase().contains("date"))) {
+						// First date wins: PandaUniqueItem's forged date comes after the death date
 						dateText = processedLine;
 					}
 				}

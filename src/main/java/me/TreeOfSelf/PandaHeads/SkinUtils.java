@@ -14,6 +14,17 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Scanner;
@@ -91,22 +102,109 @@ public class SkinUtils {
         return null;
     }
 
-    /**
-     * Sets skin by UUID.
-     *
-     * @param uuid uuid of the player who has the skin wanted
-     * @return property containing skin value and signature if successful, otherwise null.
-     */
-    @Nullable
-    public static String[] fetchSkinByUUID(UUID uuid) {
-        try {
-            String reply = urlRequest(URI.create("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid.toString() + "?unsigned=false").toURL(), true, null);
-            return getSkinFromReply(reply);
-        } catch (IOException e) {
-            System.out.println("ERROR BIG ERROR");
-            System.out.println(e);
+    public enum Status { OK, PENDING, FAILED }
+
+    /** Skin lookup result; skin is {value, signature, name} when status is OK. */
+    public record Lookup(Status status, @Nullable String[] skin) {
+        public boolean ok() {
+            return status == Status.OK;
         }
-        return null;
+    }
+
+    private record CacheEntry(@Nullable String[] skin, long expires) {}
+
+    private record Waiter(Executor executor, Runnable onReady) {}
+
+    private static final long OK_TTL_MS = 30 * 60 * 1000L;
+    private static final long FAILED_TTL_MS = 5 * 60 * 1000L;
+    private static final long REQUEST_SPACING_MS = 1000L;
+    private static final long RATE_LIMIT_BACKOFF_MS = 60 * 1000L;
+    private static final int MAX_QUEUED = 64;
+    private static final int MAX_CACHED = 4096;
+
+    private static final Map<UUID, CacheEntry> CACHE = new ConcurrentHashMap<>();
+    // uuid -> callbacks waiting for it; holds exactly the uuids in QUEUE
+    private static final Map<UUID, List<Waiter>> PENDING = new HashMap<>();
+    private static final LinkedBlockingQueue<UUID> QUEUE = new LinkedBlockingQueue<>();
+    private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+
+    static {
+        Thread worker = new Thread(SkinUtils::workerLoop, "PandaHeads skin lookup");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    /**
+     * Skin by UUID from Mojang's session server, without blocking. A cache miss queues the request
+     * (one per second, paused on HTTP 429) and returns PENDING; onReady then runs on the executor
+     * once the lookup has finished. Never call Mojang from the server thread directly.
+     */
+    public static Lookup lookupSkin(@Nullable UUID uuid, @Nullable Executor executor, @Nullable Runnable onReady) {
+        if (uuid == null) return new Lookup(Status.FAILED, null);
+        CacheEntry cached = CACHE.get(uuid);
+        if (cached != null && cached.expires > System.currentTimeMillis()) {
+            return new Lookup(cached.skin != null ? Status.OK : Status.FAILED, cached.skin);
+        }
+        synchronized (PENDING) {
+            List<Waiter> waiters = PENDING.get(uuid);
+            if (waiters == null) {
+                if (PENDING.size() >= MAX_QUEUED) return new Lookup(Status.PENDING, null);
+                waiters = new ArrayList<>();
+                PENDING.put(uuid, waiters);
+                QUEUE.add(uuid);
+            }
+            if (executor != null && onReady != null) waiters.add(new Waiter(executor, onReady));
+        }
+        return new Lookup(Status.PENDING, null);
+    }
+
+    private static void workerLoop() {
+        long nextRequest = 0;
+        while (true) {
+            UUID uuid;
+            try {
+                uuid = QUEUE.take();
+                long wait = nextRequest - System.currentTimeMillis();
+                if (wait > 0) Thread.sleep(wait);
+            } catch (InterruptedException e) {
+                return;
+            }
+            nextRequest = System.currentTimeMillis() + REQUEST_SPACING_MS;
+
+            String[] skin = null;
+            boolean retry = false;
+            try {
+                HttpRequest request = HttpRequest.newBuilder(URI.create("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid + "?unsigned=false"))
+                    .timeout(Duration.ofSeconds(5)).GET().build();
+                HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
+                    skin = getSkinFromReply(response.body().replaceAll("\\s", "")); // the reply is pretty-printed JSON
+                } else if (response.statusCode() == 429 || response.statusCode() >= 500) {
+                    retry = true;
+                }
+            } catch (InterruptedException e) {
+                return;
+            } catch (Exception e) {
+                retry = true;
+            }
+
+            if (retry) {
+                // Mojang is rate limiting or down: try this one again later, keep its waiters
+                nextRequest = System.currentTimeMillis() + RATE_LIMIT_BACKOFF_MS;
+                QUEUE.add(uuid);
+                continue;
+            }
+
+            if (CACHE.size() >= MAX_CACHED) CACHE.clear();
+            CACHE.put(uuid, new CacheEntry(skin, System.currentTimeMillis() + (skin != null ? OK_TTL_MS : FAILED_TTL_MS)));
+            List<Waiter> waiters;
+            synchronized (PENDING) {
+                waiters = PENDING.remove(uuid);
+            }
+            if (waiters != null) {
+                for (Waiter waiter : waiters) waiter.executor.execute(waiter.onReady);
+            }
+        }
     }
 
     @Nullable
@@ -132,42 +230,11 @@ public class SkinUtils {
         return uuid;
     }
 
-    @Nullable
-    public static String getNameFromComponentMap(DataComponentMap componentMap) {
-        UUID uuid;
-        if (componentMap.has(DataComponents.CUSTOM_DATA)
-            && ((componentMap.get(DataComponents.CUSTOM_DATA).copyTag().contains("PublicBukkitValues")
-            && componentMap.get(DataComponents.CUSTOM_DATA).copyTag().getCompound("PublicBukkitValues").map(c -> c.contains("head-drop:headdrop-user")).orElse(false))
-            || componentMap.get(DataComponents.CUSTOM_DATA).copyTag().contains("HeadDrops_Owner"))) {
-            CompoundTag root = componentMap.get(DataComponents.CUSTOM_DATA).copyTag();
-            if (root.getCompound("PublicBukkitValues").map(c -> c.contains("head-drop:headdrop-user")).orElse(false)) {
-                uuid = UUID.fromString(root.getCompound("PublicBukkitValues").flatMap(c -> c.getString("head-drop:headdrop-user")).orElseThrow());
-            } else {
-                uuid = UUID.fromString(root.getString("HeadDrops_Owner").orElseThrow());
-            }
-
-            @Nullable String[] skinVals = SkinUtils.fetchSkinByUUID(uuid);
-            if (skinVals != null) {
-                return skinVals[2];
-            } else {
-                return null;
-            }
-        }
-        if (!componentMap.has(DataComponents.PROFILE)) {
-            return null;
-        }
-        uuid = componentMap.get(DataComponents.PROFILE).partialProfile().id();
-        String name = componentMap.get(DataComponents.PROFILE).partialProfile().name();
-        if (name.isEmpty() || name.isBlank()) {
-            @Nullable String[] skinVals = SkinUtils.fetchSkinByUUID(uuid);
-            if (skinVals != null) {
-                return skinVals[2];
-            } else {
-                return null;
-            }
-        } else {
-            return name;
-        }
+    public static boolean isHeadDrop(DataComponentMap componentMap) {
+        if (!componentMap.has(DataComponents.CUSTOM_DATA)) return false;
+        CompoundTag root = componentMap.get(DataComponents.CUSTOM_DATA).copyTag();
+        return root.getCompound("PublicBukkitValues").map(c -> c.contains("head-drop:headdrop-user")).orElse(false)
+            || root.contains("HeadDrops_Owner");
     }
 
     /**
@@ -179,7 +246,7 @@ public class SkinUtils {
      */
     @Nullable
     protected static String[] getSkinFromReply(String reply) {
-        if (reply == null || reply.contains("error") || reply.isEmpty()) {
+        if (reply == null || reply.contains("error") || reply.isEmpty() || !reply.contains("\"signature\":\"")) {
             return null;
         }
 
@@ -207,6 +274,8 @@ public class SkinUtils {
      */
     private static String urlRequest(URL url, boolean useGetMethod, @Nullable File image) throws IOException {
         URLConnection connection = url.openConnection();
+        connection.setConnectTimeout(5000);
+        connection.setReadTimeout(10000);
 
         String reply = null;
 
